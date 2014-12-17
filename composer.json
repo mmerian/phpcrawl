@@ -1,0 +1,16 @@
+{
+	"name": "mmerian/phpcrawl",
+	"description": "PHPCrawl is a webcrawler/webspider-library written in PHP. It supports filters, limiters, cookie-handling, robots.txt-handling, multiprocessing and much more.",
+	"license": "GPL-v2",
+	"authors": [
+		{
+			"name": "Uwe Hunfeld",
+			"email": "phpcrawl@cuab.de"
+		}
+	],
+	"autoload": {
+		"classmap": [
+			"libs"
+		]
+	}
+}
