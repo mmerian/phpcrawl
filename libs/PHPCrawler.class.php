@@ -4,12 +4,12 @@
  *
  * @package phpcrawl
  * @author Uwe Hunfeld (phpcrawl@cuab.de)
- * @version 0.82
+ * @version 0.83
  * @License GPL2
  */
 class PHPCrawler
 {
-  public $class_version = "0.82";
+  public $class_version = "0.83rc1";
   
   /**
    * The PHPCrawlerHTTPRequest-Object
@@ -70,11 +70,18 @@ class PHPCrawler
   protected $obey_robots_txt = false;
   
   /**
-   * Limit of documents to receive
+   * Location of robots.txt-file to obey as URI
+   *
+   * @val string
+   */
+  protected $robots_txt_uri;
+  
+  /**
+   * Limit of requests to preform
    *
    * @var int
    */
-  protected $document_limit = 0;
+  protected $request_limit = 0;
   
   /**
    * Limit of bytes to receive
@@ -213,8 +220,9 @@ class PHPCrawler
     // Include needed class-files
     $classpath = dirname(__FILE__);
     
-    // Utils-class
-    if (!class_exists("PHPCrawlerUtils")) include_once($classpath."/PHPCrawlerUtils.class.php");
+    // Utils-classes
+    if (!class_exists("PHPCrawlerUtils")) include_once($classpath."/Utils/PHPCrawlerUtils.class.php");
+    if (!class_exists("PHPCrawlerEncodingUtils")) include_once($classpath."/Utils/PHPCrawlerEncodingUtils.class.php");
     
     // URL-Cache-classes
     if (!class_exists("PHPCrawlerURLCacheBase")) include_once($classpath."/UrlCache/PHPCrawlerURLCacheBase.class.php");
@@ -332,8 +340,10 @@ class PHPCrawler
     // Pass base-URL to the UrlFilter
     $this->UrlFilter->setBaseURL($this->starting_url);
     
-    // Add the starting-URL to the url-cache
-    $this->LinkCache->addUrl(new PHPCrawlerURLDescriptor($this->starting_url));
+    // Add the starting-URL to the url-cache with link-depth 0
+    $url_descriptor = new PHPCrawlerURLDescriptor($this->starting_url);
+    $url_descriptor->url_link_depth = 0;
+    $this->LinkCache->addUrl($url_descriptor);
   }
   
   /**
@@ -628,6 +638,13 @@ class PHPCrawler
    */
   protected function processUrl(PHPCrawlerURLDescriptor $UrlDescriptor)
   { 
+    // Check for abortion from other processes first if mode is MPMODE_CHILDS_EXECUTES_USERCODE
+    if ($this->multiprocess_mode == PHPCrawlerMultiProcessModes::MPMODE_CHILDS_EXECUTES_USERCODE)
+    { 
+      // Check for abortion (any limit reached?)
+      if ($this->checkForAbort() !== null) return true;
+    }
+    
     PHPCrawlerBenchmark::start("processing_url");
     
     // Setup HTTP-request
@@ -655,22 +672,23 @@ class PHPCrawler
     $this->delayRequest();
     $PageInfo = $this->PageRequest->sendRequest();
     
-    if ($this->multiprocess_mode != PHPCrawlerMultiProcessModes::MPMODE_PARENT_EXECUTES_USERCODE)
-    {
-      // Check for abort
-      $abort_reason = $this->checkForAbort();
-      if ($abort_reason !== null) return true;
-      
-      $this->CrawlerStatusHandler->updateCrawlerStatus($PageInfo);
-    }
-    
     // Remove post and cookie-data from request-object
     $this->PageRequest->clearCookies();
     $this->PageRequest->clearPostData();
     
-    // Call user-methods if crawler doesn't run in MPMODE_PARENT_EXECUTES_USERCODE
+    // Complete PageInfo-Object with benchmarks
+    PHPCrawlerBenchmark::stop("processing_url");
+    $PageInfo->benchmarks = PHPCrawlerBenchmark::getAllBenchmarks();
+    
+    // Call user-methods, update craler-status and check for abortion here if crawler doesn't run in MPMODE_PARENT_EXECUTES_USERCODE
     if ($this->multiprocess_mode != PHPCrawlerMultiProcessModes::MPMODE_PARENT_EXECUTES_USERCODE)
-    {
+    { 
+      // Check for abortion (any limit reached?)
+      if ($this->checkForAbort() !== null) return true;
+      
+      // Update crawler-status
+      $this->CrawlerStatusHandler->updateCrawlerStatus($PageInfo);
+      
       $user_abort = false;
       
       // If defined by user -> call old handlePageData-method, otherwise don't (because of high memory-usage)
@@ -691,8 +709,14 @@ class PHPCrawler
         $this->CrawlerStatusHandler->updateCrawlerStatus(null, PHPCrawlerAbortReasons::ABORTREASON_USERABORT);
       }
       
-      // Check for abort from other processes
+      // Check for abortion again (any limit reached?)
       if ($this->checkForAbort() !== null) return true;
+    }
+    
+    // Add document to the DocumentInfoQueue if mode is MPMODE_PARENT_EXECUTES_USERCODE
+    if ($this->multiprocess_mode == PHPCrawlerMultiProcessModes::MPMODE_PARENT_EXECUTES_USERCODE)
+    {
+      $this->DocumentInfoQueue->addDocumentInfo($PageInfo);
     }
     
     // Filter found URLs by defined rules
@@ -710,7 +734,8 @@ class PHPCrawler
       }
       else if ($crawler_status->first_content_url == null)
       {
-        $this->UrlFilter->keepRedirectUrls($PageInfo); // Content wasn't found so far, so just keep redirect-urls 
+        $this->UrlFilter->keepRedirectUrls($PageInfo, true); // Content wasn't found so far, so just keep redirect-urls and
+                                                             // decrease lindepth 
       }
       else if ($crawler_status->first_content_url != null)
       {
@@ -729,16 +754,6 @@ class PHPCrawler
     // Add filtered links to URL-cache
     $this->LinkCache->addURLs($PageInfo->links_found_url_descriptors);
     
-    PHPCrawlerBenchmark::stop("processing_url");
-    
-    // Complete PageInfo-Object with benchmarks
-    $PageInfo->benchmarks = PHPCrawlerBenchmark::getAllBenchmarks();
-    
-    if ($this->multiprocess_mode == PHPCrawlerMultiProcessModes::MPMODE_PARENT_EXECUTES_USERCODE)
-    {
-      $this->DocumentInfoQueue->addDocumentInfo($PageInfo);
-    }
-    
      // Mark URL as "followed"
     $this->LinkCache->markUrlAsFollowed($UrlDescriptor);
     
@@ -750,8 +765,12 @@ class PHPCrawler
   protected function processRobotsTxt()
   {
     PHPCrawlerBenchmark::start("processing_robots_txt");
-    $robotstxt_rules = $this->RobotsTxtParser->parseRobotsTxt(new PHPCrawlerURLDescriptor($this->starting_url), $this->PageRequest->userAgentString);
+    
+    $robotstxt_rules = $this->RobotsTxtParser->parseRobotsTxt(new PHPCrawlerURLDescriptor($this->starting_url),
+                                                              $this->PageRequest->userAgentString,
+                                                              $this->robots_txt_uri);
     $this->UrlFilter->addURLFilterRules($robotstxt_rules);
+    
     PHPCrawlerBenchmark::stop("processing_robots_txt");
   }
   
@@ -781,15 +800,15 @@ class PHPCrawler
     if ($this->traffic_limit > 0 && $crawler_status->bytes_received >= $this->traffic_limit)
       $abort_reason = PHPCrawlerAbortReasons::ABORTREASON_TRAFFICLIMIT_REACHED;
     
-    // If document-limit is set
-    if ($this->document_limit > 0)
+    // If request-limit is set
+    if ($this->request_limit > 0)
     {
       // If document-limit regards to received documetns
-      if ($this->only_count_received_documents == true && $crawler_status->documents_received >= $this->document_limit)
+      if ($this->only_count_received_documents == true && $crawler_status->documents_received >= $this->request_limit)
       {
         $abort_reason = PHPCrawlerAbortReasons::ABORTREASON_FILELIMIT_REACHED;
       }
-      elseif ($this->only_count_received_documents == false && $crawler_status->links_followed >= $this->document_limit)
+      elseif ($this->only_count_received_documents == false && $crawler_status->links_followed >= $this->request_limit)
       {
         $abort_reason = PHPCrawlerAbortReasons::ABORTREASON_FILELIMIT_REACHED;
       }
@@ -1402,12 +1421,11 @@ class PHPCrawler
   }
   
   /**
-   * Decides whether the crawler should parse and obey robots.txt-files. 
+   * Defines whether the crawler should parse and obey robots.txt-files. 
    *
-   * If this is set to TRUE, the crawler looks for a robots.txt-file for every host that sites or files should be received
-   * from during the crawling process. If a robots.txt-file for a host was found, the containig directives appliying to the
-   * useragent-identification of the cralwer
-   * ("PHPCrawl" or manually set by calling {@link setUserAgentString()}) will be obeyed.
+   * If this is set to TRUE, the crawler looks for a robots.txt-file for the root-URL of the crawling-process at the default location
+   * and - if present - parses it and obeys all containig directives appliying to the
+   * useragent-identification of the cralwer ("PHPCrawl" by default or manually set by calling {@link setUserAgentString()})
    *
    * The default-value is FALSE (for compatibility reasons).
    *
@@ -1415,15 +1433,25 @@ class PHPCrawler
    * If e.g. {@link addFollowMatch}("#http://foo\.com/path/file\.html#") was set, but a directive in the robots.txt-file of the host
    * foo.com says "Disallow: /path/", the URL http://foo.com/path/file.html will be ignored by the crawler anyway.
    *
-   * @param bool $mode Set to TRUE if you want the crawler to obey robots.txt-files.
+   * @param bool   $mode           Set to TRUE if you want the crawler to obey robots.txt-files.
+   * @param string $robots_txt_uri Optionally. The URL or path to the robots.txt-file to obey as URI (like "http://mysite.com/path/myrobots.txt"
+                                   or "file://../a_robots_file.txt")
+   *                               If not set (or set to null), the crawler uses the default robots.txt-location of the root-URL ("http://rooturl.com/robots.txt")
+   *
    * @return bool
    * @section 2 Filter-settings
    */
-  public function obeyRobotsTxt($mode)
+  public function obeyRobotsTxt($mode, $robots_txt_uri = null)
   {
     if (!is_bool($mode)) return false;
     
     $this->obey_robots_txt = $mode;
+    
+    if ($mode == true)
+      $this->robots_txt_uri = $robots_txt_uri;
+    else
+      $this->robots_txt_uri = null;
+    
     return true;
   }
   
@@ -1453,23 +1481,39 @@ class PHPCrawler
   }
   
   /**
-   * Sets a limit to the number of pages/files the crawler should follow.
+   * Sets a limit to the total number of requests the crawler should execute.
    *
-   * If the limit is reached, the crawler stops the crawling-process. The default-value is 0 (no limit).
+   * If the given limit is reached, the crawler stops the crawling-process. The default-value is 0 (no limit).
+   *
+   * If the second parameter is set to true, the given limit refers to to total number of successfully received documents
+   * instead of the number of requests.
    *
    * @param int $limit                          The limit, set to 0 for no limit (default value).
    * @param bool $only_count_received_documents OPTIONAL.
-   *                                            TRUE means that only documents the crawler received will be counted.
-   *                                            FALSE means that ALL followed and requested pages/files will be counted, even if the content wasn't be received.
+   *                                            If TRUE, the given limit refers to the total number of successfully received documents.
+   *                                            If FALSE, the given limit refers to the total number of requests done, regardless of the number of successfully received documents.
+   *                                            Defaults to FALSE.
+   * @return bool
    * @section 5 Limit-settings
    */
-  public function setPageLimit($limit, $only_count_received_documents = false)
+  public function setRequestLimit($limit, $only_count_received_documents = false)
   {
     if (!preg_match("/^[0-9]*$/", $limit)) return false;
     
-    $this->document_limit = $limit;
+    $this->request_limit = $limit;
     $this->only_count_received_documents = $only_count_received_documents;
     return true;
+  }
+  
+  /**
+   * Alias for setRequestLimit() method.
+   *
+   * @section 11 Deprecated
+   * @deprecated Please use setRequestLimit() method!
+   */
+  public function setPageLimit($limit, $only_count_received_documents = false)
+  {
+    return $this->setRequestLimit($limit, $only_count_received_documents);
   }
   
   /**
@@ -2033,6 +2077,61 @@ class PHPCrawler
     if (is_float($time) || is_int($time))
     {
       $this->request_delay_time = $time;
+      return true;
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Defines the sections of HTML-documents that will get ignroed by the link-finding algorithm.
+   *
+   * By default, phpcrawl is searching for links in the entire documents it receives during the crawling-process.
+   * This sometimes brings up some non existing "phantom-URLs" because the crawler recognized i.e. some javascript-code
+   * as a link that was not meant to be, or the crawler found a link inside an html-comment that doesn't exist anymore.
+   *
+   * By using this method, users can define what predefined sections of HTML-documents should get ignored when it comes
+   * to finding links.
+   *
+   * See {@link PHPCrawlerLinkSearchDocumentSections}-constants for all predefined sections.
+   *
+   * Example 1:
+   * <code>
+   * // Let the crawler ignore script-sections and html-comment-sections when finding links
+   * $crawler->excludeLinkSearchDocumentSections(PHPCrawlerLinkSearchDocumentSections::SCRIPT_SECTIONS |
+   *                                             PHPCrawlerLinkSearchDocumentSections::HTML_COMMENT_SECTIONS);
+   * </code>
+   * Example 2:
+   * <code>
+   * // Let the crawler ignore all special sections except HTML-comments 
+   * $crawler->excludeLinkSearchDocumentSections(PHPCrawlerLinkSearchDocumentSections::ALL_SPECIAL_SECTIONS ^
+   *                                             PHPCrawlerLinkSearchDocumentSections::HTML_COMMENT_SECTIONS);
+   * </code>
+   *
+   * @param int $document_sections Bitwise combination of the {@link PHPCrawlerLinkSearchDocumentSections}-constants.
+   * @section 6 Linkfinding settings 
+   */
+  public function excludeLinkSearchDocumentSections($document_sections)
+  {
+    return $this->PageRequest->excludeLinkSearchDocumentSections($document_sections);
+  }
+  
+  /**
+   * Sets the maximum crawling depth
+   *
+   * Defines how "deep" the crawler should follow links relating to the entry-URL of a crawling-process.
+   *
+   * For instance: If the maximum depth is set to 1, the crawler only will follow links found in the entry-page
+   * of the crawling-process, but won't follow any further links found in underlying documents.
+   *
+   * @param int $depth The maximum link-depth the crawler should follow
+   * @section 5 Limit-settings
+   */
+  public function setCrawlingDepthLimit($depth)
+  {
+    if (is_int($depth) && $depth >= 0)
+    {
+      $this->UrlFilter->max_crawling_depth = $depth;
       return true;
     }
     

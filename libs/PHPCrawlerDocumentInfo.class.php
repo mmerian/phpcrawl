@@ -15,6 +15,14 @@ class PHPCrawlerDocumentInfo
   public $url = "";
   
   /**
+   * The linking-depth of the URL related to the entry-URL of the crawling-process.
+   *
+   * @var int
+   * @section 1 URL-related information
+   */
+  public $url_link_depth = null;
+  
+  /**
    * The protocol-part of the URL of the page or file, e.g. "http://"
    *
    * @var string

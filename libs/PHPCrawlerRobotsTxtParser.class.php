@@ -6,14 +6,7 @@
  * @internal
  */  
 class PHPCrawlerRobotsTxtParser
-{
-  /**
-   * A PHPCrawlerHTTPRequest-object for requesting robots.txt-files.
-   *
-   * @var PHPCrawlerHTTPRequest
-   */
-  protected $PageRequest;
-  
+{ 
   public function __construct()
   {
     // Init PageRequest-class
@@ -22,35 +15,38 @@ class PHPCrawlerRobotsTxtParser
   }
   
   /**
-   * Parses the robots.txt-file related to the given URL and returns regular-expression-rules
-   * corresponding to the containing "disallow"-rules that are adressed to the given user-agent.
+   * Parses a robots.txt-file and returns regular-expression-rules corresponding to the containing "disallow"-rules
+   * that are adressed to the given user-agent.
    *
-   * @param PHPCrawlerURLDescriptor $Url The URL
-   * @param string $user_agent_string User-agent.
+   * @param PHPCrawlerURLDescriptor $BaseUrl           The root-URL all rules from the robots-txt-file should relate to
+   * @param string                  $user_agent_string The useragent all rules from the robots-txt-file should relate to
+   * @param string                  $robots_txt_uri    Optional. The location of the robots.txt-file as URI.
+   *                                                   If not set, the default robots.txt-file for the given BaseUrl gets parsed.
    *
    * @return array Numeric array containing regular-expressions for each "disallow"-rule defined in the robots.txt-file
    *               that's adressed to the given user-agent.
    */
-  public function parseRobotsTxt(PHPCrawlerURLDescriptor $Url, $user_agent_string)
+  public function parseRobotsTxt(PHPCrawlerURLDescriptor $BaseUrl, $user_agent_string, $robots_txt_uri = null)
   {
     PHPCrawlerBenchmark::start("processing_robotstxt");
     
-    // URL of robots-txt
-    $RobotsTxtUrl = self::getRobotsTxtURL($Url);
+    // If robots_txt_uri not given, use the default one for the given BaseUrl
+    if ($robots_txt_uri === null)
+      $robots_txt_uri = self::getRobotsTxtURL($BaseUrl->url_rebuild);
     
-    // Get robots.txt-content related to the given URL
-    $robots_txt_content = $this->getRobotsTxtContent($RobotsTxtUrl);
-    
+    // Get robots.txt-content
+    $robots_txt_content = PHPCrawlerUtils::getURIContent($robots_txt_uri, $user_agent_string);
+
     $non_follow_reg_exps = array();
     
     // If content was found
     if ($robots_txt_content != null)
     {
       // Get all lines in the robots.txt-content that are adressed to our user-agent.
-      $applying_lines = $this->getApplyingLines($robots_txt_content, $user_agent_string);
+      $applying_lines = $this->getUserAgentLines($robots_txt_content, $user_agent_string);
       
       // Get valid reg-expressions for the given disallow-pathes.
-      $non_follow_reg_exps = $this->buildRegExpressions($applying_lines, PHPCrawlerUtils::getRootUrl($Url->url_rebuild));
+      $non_follow_reg_exps = $this->buildRegExpressions($applying_lines, PHPCrawlerUtils::getRootUrl($BaseUrl->url_rebuild));
     }
     
     PHPCrawlerBenchmark::stop("processing_robots.txt");
@@ -59,84 +55,46 @@ class PHPCrawlerRobotsTxtParser
   }
   
   /**
-   * Function returns all RAW lines in the given robots.txt-content that apply to
+   * Gets all raw lines from the given robots.txt-content that apply to
    * the given useragent-string.
    *
-   * @return array Numeric array with found lines
+   * @return array Numeric array containing the lines
    */
-  protected function getApplyingLines(&$robots_txt_content, $user_agent_string)
+  protected function getUserAgentLines(&$robots_txt_content, $user_agent_string)
   {
     // Split the content into its lines
     $robotstxt_lines = explode("\n", $robots_txt_content);
     
-    // Flag that will get TRUE if the loop over the lines gets
-    // into a section that applies to our user_agent_string 
-    $matching_section = false;
+    $user_agent_lines = array();
+    $current_user_agent = null;
     
-    // Flag that indicats if the loop is in a "agent-define-section"
-    // (the parts/blocks that contain the "User-agent"-lines.)
-    $agent_define_section = false;
-    
-    // Flag that indicates if we have found a section that fits to our
-    // User-agent
-    $matching_section_found = false;
-    
-    // Array to collect all the lines that applie to our user_agent
-    $applying_lines = array();
-    
-    // Loop over the lines
+    // Loop over the lines and check if any user-agent-sections match with our agent
     $cnt = count($robotstxt_lines);
     for ($x=0; $x<$cnt; $x++)
     {
-      $robotstxt_lines[$x] = trim($robotstxt_lines[$x]);
+      $line = trim($robotstxt_lines[$x]);
+      
+      if ($line == "") continue;
       
       // Check if a line begins with "User-agent"
-      if (preg_match("#^User-agent:# i", $robotstxt_lines[$x]))
+      if (preg_match("#^User-agent:\s*(.*)# i", $line, $match))
       {
-        // If a new "user-agent" section begins -> reset matching_section-flag
-        if ($agent_define_section == false)
-        {
-          $matching_section = false;
-        }
+        if (isset($match[1]))
+          $current_user_agent = trim($match[1]);
+        else
+          $current_user_agent = "";
         
-        $agent_define_section = true; // Now we are in an agent-define-section
-        
-        // The user-agent specified in the "User-agent"-line
-        preg_match("#^User-agent:[ ]*(.*)$# i", $robotstxt_lines[$x], $match);
-        $user_agent_section = trim($match[1]);
-        
-        // if the specified user-agent in the line fits to our user-agent-String (* fits always)
-        // -> switch the flag "matching_section" to true
-        if ($user_agent_section == "*" || preg_match("#^".preg_quote($user_agent_section)."# i", $user_agent_string))
-        {
-          $matching_section = true;
-          $matching_section_found = true;
-        }
-        
-        continue; // Don't do anything else with the "User-agent"-lines, just go on
-      }
-      else
-      {
-        // We are not in an agent-define-section (anymore)
-        $agent_define_section = false;
+        continue;
       }
       
-      // If we are in a section that applies to our user_agent
-      // -> store the line.
-      if ($matching_section == true)
+      // If User-Agent matches with our user-agent-string
+      if ($current_user_agent == "*" || strtolower($current_user_agent) == strtolower($user_agent_string))
       {
-        $applying_lines[] = $robotstxt_lines[$x];
-      }
-      
-      // If we are NOT in a matching section (anymore) AND we've already found
-      // and parsed a matching section -> stop looking further (thats what RFC says)
-      if ($matching_section == false && $matching_section_found == true)
-      {
-        // break;
+        $user_agent_lines[] = trim($line);
       }
     }
     
-    return $applying_lines;
+    return $user_agent_lines;
   }
   
   /**
@@ -148,16 +106,25 @@ class PHPCrawlerRobotsTxtParser
    *
    * @return array  Numeric array containing regular-expresseions created for each "disallow"-line.
    */
-  protected function buildRegExpressions(&$applying_lines, $base_url)
+  protected function buildRegExpressions($applying_lines, $base_url)
   { 
     // First, get all "Disallow:"-pathes
     $disallow_pathes = array();
-    for ($x=0; $x<count($applying_lines); $x++)
+    
+    $cnt = count($applying_lines);
+    for ($x=0; $x<$cnt; $x++)
     {
-      if (preg_match("#^Disallow:# i", $applying_lines[$x]))
+      preg_match("#^Disallow:\s*(.*)# i", $applying_lines[$x], $match);
+      
+      if (!empty($match[1]))
       {
-        preg_match("#^Disallow:[ ]*(.*)#", $applying_lines[$x], $match);
-        $disallow_pathes[] = trim($match[1]);
+        $path = trim($match[1]);
+        
+        // Add leading slash
+        if (substr($path, 0, 1) != "/")
+          $path = "/".$path;
+        
+        $disallow_pathes[] = $path;
       }
     }
     
@@ -170,12 +137,10 @@ class PHPCrawlerRobotsTxtParser
     
     $non_follow_expressions = array();
     
-    for ($x=0; $x<count($disallow_pathes); $x++)
-    {
-      // If the disallow-path is empty -> simply ignore it
-      if ($disallow_pathes[$x] == "") continue;
-      
-      $non_follow_path_complpete = $normalized_base_url.substr($disallow_pathes[$x], 1); // "http://www.foo.com/bla/"
+    $cnt = count($disallow_pathes);
+    for ($x=0; $x<$cnt; $x++)
+    { 
+      $non_follow_path_complpete = $normalized_base_url.$disallow_pathes[$x]; // "http://www.foo.com/bla/"
       $non_follow_exp = preg_quote($non_follow_path_complpete, "#"); // "http://www\.foo\.com/bla/"
       $non_follow_exp = "#^".$non_follow_exp."#"; // "#^http://www\.foo\.com/bla/#"
         
@@ -185,42 +150,18 @@ class PHPCrawlerRobotsTxtParser
     return $non_follow_expressions;
   }
   
-  /**
-   * Retreives the content of a robots.txt-file
-   *
-   * @param PHPCrawlerURLDescriptor $Url The URL of the robots.txt-file
-   * @return string The content of the robots.txt or NULL if no robots.txt was found.
-   */
-  protected function getRobotsTxtContent(PHPCrawlerURLDescriptor $Url)
-  {
-    // Request robots-txt
-    $this->PageRequest->setUrl($Url);
-    $PageInfo = $this->PageRequest->sendRequest();
-
-    // Return content of the robots.txt-file if it was found, otherwie
-    // reutrn NULL
-    if ($PageInfo->http_status_code == 200)
-    {
-      return $PageInfo->content;
-    }
-    else
-    {
-      return null;
-    }
-  }
-  
   /** 
-   * Returns the Robots.txt-URL related to the given URL
+   * Returns the default Robots.txt-URL related to the given URL
    *
-   * @param PHPCrawlerURLDescriptor $Url  The URL as PHPCrawlerURLDescriptor-object
-   * @return PHPCrawlerURLDescriptor Url of the related to the passed URL.
+   * @param string $url The URL
+   * @return string Url of the related robots.txt file
    */
-  public static function getRobotsTxtURL(PHPCrawlerURLDescriptor $Url)
+  public static function getRobotsTxtURL($url)
   {
-    $url_parts = PHPCrawlerUtils::splitURL($Url->url_rebuild); 
+    $url_parts = PHPCrawlerUtils::splitURL($url); 
     $robots_txt_url = $url_parts["protocol"].$url_parts["host"].":".$url_parts["port"] . "/robots.txt";
     
-    return new PHPCrawlerURLDescriptor($robots_txt_url);
+    return $robots_txt_url;
   }
 }
   

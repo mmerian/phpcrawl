@@ -99,7 +99,7 @@ var classref_page = "<?php echo $cfg_phpcrawlClassrefPage; ?>";
 <body>
 
 <form name="options" method="post" action="<?php echo $_SERVER["PHP_SELF"]; ?>" target="blank">
-<table width="700" cellspacing="2" cellpadding="2" border="0" class="bordered">
+<table width="800" cellspacing="2" cellpadding="2" border="0" class="bordered">
 <tr>
   <td colspan="3" class="head">Load / Save Setup</td>
 </tr>
@@ -143,7 +143,7 @@ elseif (isset($rw_message)) {
 
 <br>
 
-<table width="700" cellspacing="2" cellpadding="2" border="0" class="bordered">
+<table width="800" cellspacing="2" cellpadding="2" border="0" class="bordered">
 <tr>
   <td colspan="3" class="head">
     Class Setup &nbsp;&nbsp;&nbsp;
@@ -505,7 +505,7 @@ if (isset($setup_error_message)) {
 
 <br>
 
-<table width="700" cellspacing="2" cellpadding="2" border="0" class="bordered">
+<table width="800" cellspacing="2" cellpadding="2" border="0" class="bordered">
 <tr>
   <td colspan="3" class="head">Output</td>
 </tr>
@@ -629,7 +629,7 @@ if (isset($setup_error_message)) {
 
 <br>
 
-<table width="700" cellspacing="0" cellpadding="3" border="0">
+<table width="800" cellspacing="0" cellpadding="3" border="0">
 <tr>
   <td class="white" width="300" align="right">
     <input type="checkbox" name="misc[force_flush]" value="1" <?php if (isset($misc["force_flush"])) echo "checked"; ?>>

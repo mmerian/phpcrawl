@@ -5,7 +5,6 @@ if (!preg_match("#index\.php$#i", $_SERVER["SCRIPT_FILENAME"]))
   header("Location: index.php");
   exit;
 }
-
 ?>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 
@@ -21,7 +20,7 @@ if (!preg_match("#index\.php$#i", $_SERVER["SCRIPT_FILENAME"]))
  
  #output {
     width:691px; 
-    height:500px; 
+    height:700px; 
     background-color:#e1e1e1; 
     border-width:2px; 
     border-style:solid; 
@@ -35,7 +34,7 @@ if (!preg_match("#index\.php$#i", $_SERVER["SCRIPT_FILENAME"]))
     padding-left: 5px;
     padding-top: 3px;
     width:691px; 
-    height:30px; 
+    height:50px; 
     background-color:#ffffff; 
     border-top: 2px black solid;
     border-left: 2px black solid; 
@@ -43,11 +42,12 @@ if (!preg_match("#index\.php$#i", $_SERVER["SCRIPT_FILENAME"]))
     font-family: verdana;
     font-size: 14px;
     font-weight: bold;
+    text-align: center;
   }
   
   #foot {
     width:691px; 
-    height:40px; 
+    height:50px; 
     background-color:#ffffff; 
     border-bottom: 2px black solid;
     border-left: 2px black solid; 
@@ -117,7 +117,9 @@ $setup_error = $crawler->setupCrawler();
   
   <div id="head">
     PHPCrawl Testinterface Output
-    (using version: <?php echo $crawler->class_version; ?>)
+    (using phpcrawl version: <?php echo $crawler->class_version; ?>)
+    <br />
+    <input type="button" id="stopbutton" value="Stop crawling" onClick="window.stop(); this.disabled = true; this.value = 'Aborted'" style="margin-top: 5px; width: 120px;">
   </div>
     
   <div id="output">
@@ -149,6 +151,11 @@ $setup_error = $crawler->setupCrawler();
     // Print the summary if no error occured
     if ($setup_error == false)
     {
+      echo '<script language="javascript">
+            document.getElementById("stopbutton").value = "Done";
+            document.getElementById("stopbutton").disabled = true;
+            </script>';
+      
       echo '<table class="summary">
               <tr>
                 <td id="summary_head">Process finished!&nbsp;</td>

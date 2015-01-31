@@ -43,11 +43,18 @@ class PHPCrawlerURLDescriptor
   public $is_redirect_url = false;
   
   /**
+   * The URL/link-depth of this URL relevant to the entry-URL of the crawling-process
+   *
+   * @var int
+   */
+  public $url_link_depth;
+  
+  /**
    * Initiates an URL-descriptor
    *
    * @internal
    */
-  public function __construct($url_rebuild, $link_raw = null, $linkcode = null, $linktext = null, $refering_url = null)
+  public function __construct($url_rebuild, $link_raw = null, $linkcode = null, $linktext = null, $refering_url = null, $url_link_depth = null)
   {
     $this->url_rebuild = $url_rebuild;
     
@@ -55,6 +62,7 @@ class PHPCrawlerURLDescriptor
     if (!empty($linkcode)) $this->linkcode = $linkcode;
     if (!empty($linktext)) $this->linktext = $linktext;
     if (!empty($refering_url)) $this->refering_url = $refering_url;
+    if ($url_link_depth !== null) $this->url_link_depth = (int)$url_link_depth;
   }  
 }
 ?>

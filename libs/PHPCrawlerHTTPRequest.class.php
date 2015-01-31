@@ -176,6 +176,11 @@ class PHPCrawlerHTTPRequest
   
   protected $header_check_callback_function = null;
   
+  protected $content_buffer_size = 200000;
+  protected $chunk_buffer_size = 20240;
+  protected $socket_read_buffer_size = 1024;
+  protected $source_overlap_size = 1500;
+  
   public function __construct()
   {
     // Init LinkFinder
@@ -353,6 +358,7 @@ class PHPCrawlerHTTPRequest
     $PageInfo->file = $this->url_parts["file"];
     $PageInfo->query = $this->url_parts["query"];
     $PageInfo->port = $this->url_parts["port"];
+    $PageInfo->url_link_depth = $this->UrlDescriptor->url_link_depth;
     
     // Create header to send
     $request_header_lines = $this->buildRequestHeader();
@@ -406,16 +412,11 @@ class PHPCrawlerHTTPRequest
       $PageInfo->refering_link_raw = $this->UrlDescriptor->link_raw;
       $PageInfo->refering_linktext = $this->UrlDescriptor->linktext;
     }
-      
-    // Call header-check-callback
-    $ret = 0;
-    if ($this->header_check_callback_function != null)
-      $ret = call_user_func($this->header_check_callback_function, $this->lastResponseHeader);
     
     // Check if content should be received
     $receive = $this->decideRecevieContent($this->lastResponseHeader);
     
-    if ($ret < 0 || $receive == false)
+    if ($receive == false)
     {
       @fclose($this->socket);
       $PageInfo->received = false;
@@ -485,7 +486,7 @@ class PHPCrawlerHTTPRequest
   {
     $vals = array();
     
-    // Workd like this:
+    // Works like this:
     // After the server resonded, the socket-buffer is already filled with bytes,
     // that means they were received within the server-response-time.
     
@@ -733,7 +734,7 @@ class PHPCrawlerHTTPRequest
       // Check if content is gzip-encoded (check only first chunk)
       if ($gzip_encoded_content === null)
       {
-        if (PHPCrawlerUtils::isGzipEncoded($content_chunk))
+        if (PHPCrawlerEncodingUtils::isGzipEncoded($content_chunk))
           $gzip_encoded_content = true;
         else
           $gzip_encoded_content = false;
@@ -751,16 +752,21 @@ class PHPCrawlerHTTPRequest
       
       // Decode gzip-encoded content when done with document
       if ($document_completed == true && $gzip_encoded_content == true)
-        $source_complete = $source_portion = PHPCrawlerUtils::decodeGZipContent($source_complete);
-    
+        $source_complete = $source_portion = PHPCrawlerEncodingUtils::decodeGZipContent($source_complete);
+      
       // Find links in portion of the source
-      if (($gzip_encoded_content == false && $stream_to_file == false && strlen($source_portion) >= 200000) || $document_completed == true)
+      if (($gzip_encoded_content == false && $stream_to_file == false && strlen($source_portion) >= $this->content_buffer_size) || $document_completed == true)
       {
         if (PHPCrawlerUtils::checkStringAgainstRegexArray($this->lastResponseHeader->content_type, $this->linksearch_content_types))
         {
           PHPCrawlerBenchmark::stop("data_transfer_time");
           $this->LinkFinder->findLinksInHTMLChunk($source_portion);
-          $source_portion = substr($source_portion, -1500);
+          
+          if ($this->source_overlap_size > 0)
+            $source_portion = substr($source_portion, -$this->source_overlap_size);
+          else
+            $source_portion = "";
+          
           PHPCrawlerBenchmark::start("data_transfer_time");
         }
       }
@@ -797,7 +803,7 @@ class PHPCrawlerHTTPRequest
     }
     else
     {
-      $current_chunk_size = 20240;
+      $current_chunk_size = $this->chunk_buffer_size;
     }
     
     if ($current_chunk_size === 0)
@@ -815,7 +821,7 @@ class PHPCrawlerHTTPRequest
       if ($status["unread_bytes"] > 0)
         $read_byte_buffer = $status["unread_bytes"];
       else
-        $read_byte_buffer = 1024;
+        $read_byte_buffer = $this->socket_read_buffer_size;
       
       // If chunk will be complete next read -> resize read-buffer to size of remaining chunk
       if ($bytes_received + $read_byte_buffer >= $current_chunk_size && $current_chunk_size > 0)
@@ -837,7 +843,7 @@ class PHPCrawlerHTTPRequest
       $status = socket_get_status($this->socket);
       
       // Check for EOF
-      if ($status["eof"] == true)
+      if ($status["unread_bytes"] == 0 && ($status["eof"] == true || feof($this->socket) == true))
       {
         $stop_receiving = true;
         $document_completed = true;
@@ -980,7 +986,7 @@ class PHPCrawlerHTTPRequest
     
     // if query is already utf-8 encoded -> simply urlencode it,
     // otherwise encode it to utf8 first.
-    if (PHPCrawlerUtils::isUTF8String($query) == true)
+    if (PHPCrawlerEncodingUtils::isUTF8String($query) == true)
     {
       $query = rawurlencode($query);
     }
@@ -1048,8 +1054,8 @@ class PHPCrawlerHTTPRequest
   }
   
   /**
-   * Checks whether the content of this page/file should be received (based on the content-type
-   * and the applied rules)
+   * Checks whether the content of this page/file should be received (based on the content-type, http-status-code,
+   * user-callback and the applied rules)
    *
    * @param PHPCrawlerResponseHeader $responseHeader The response-header as an PHPCrawlerResponseHeader-object
    * @return bool TRUE if the content should be received
@@ -1059,10 +1065,22 @@ class PHPCrawlerHTTPRequest
     // Get Content-Type from header
     $content_type = $responseHeader->content_type;
     
-    // No Content-Type given
-    if ($content_type == null) return false;
+    // Call user header-check-callback-method
+    if ($this->header_check_callback_function != null)
+    {
+      $ret = call_user_func($this->header_check_callback_function, $responseHeader);
+      if ($ret < 0) return false;
+    }
     
-    // Check against the given rules
+    // No Content-Type given
+    if ($content_type == null)
+      return false;
+    
+    // Status-code not 2xx
+    if ($responseHeader->http_status_code == null || $responseHeader->http_status_code > 299 || $responseHeader->http_status_code < 200)
+      return false;
+    
+    // Check against the given content-type-rules
     $receive = PHPCrawlerUtils::checkStringAgainstRegexArray($content_type, $this->receive_content_types);
     
     return $receive;
@@ -1218,6 +1236,44 @@ class PHPCrawlerHTTPRequest
     if (is_bool($mode))
     {
       $this->request_gzip_content = $mode;
+    }
+  }
+ 
+  /**
+   * Defines the sections of a document that will get ignroed by the internal link-finder.
+   *
+   * @param int $document_sections Bitwise combination of the {@link PHPCrawlerLinkSearchDocumentSections}-constants.
+   */
+  public function excludeLinkSearchDocumentSections($document_sections)
+  {
+    return $this->LinkFinder->excludeLinkSearchDocumentSections($document_sections);
+  }
+   
+  /**
+   * Adjusts some internal buffer-sizes of the HTTPRequest-class
+   *
+   * @param int $content_buffer_size     content_buffer_size in bytes or NULL if not to change this value.
+   * @param int $chunk_buffer_size       chunk_buffer_size in bytes or NULL if not to change this value.
+   * @param int $socket_read_buffer_size socket_read_buffer_sizein bytes or NULL if not to change this value.
+   * @param int $source_overlap_size     source_overlap_size in bytes or NULL if not to change this value.
+   */
+  public function setBufferSizes($content_buffer_size = null, $chunk_buffer_size = null, $socket_read_buffer_size = null, $source_overlap_size = null)
+  {
+    if ($content_buffer_size !== null)
+      $this->content_buffer_size = $content_buffer_size;
+    
+    if ($chunk_buffer_size !== null)
+      $this->chunk_buffer_size = $chunk_buffer_size;
+    
+    if ($socket_read_buffer_size !== null)
+      $this->socket_read_buffer_size = $socket_read_buffer_size;
+    
+    if ($source_overlap_size !== null)
+      $this->source_overlap_size = $source_overlap_size;
+    
+    if ($this->content_buffer_size < $this->chunk_buffer_size || $this->chunk_buffer_size < $this->socket_read_buffer_size)
+    {
+      throw new Exception("Implausible buffer-size-settings assigned to ".getClass($this).".");
     }
   }
 }

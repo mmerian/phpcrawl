@@ -24,10 +24,10 @@
         <div id="content">
         <h3>PHPCrawl FAQ</h3>
         <ol>
-          <li><b>Sometimes it happens that (almost) no information about a document is passed to the user-function handleDocumentInfo(), most
+          <li><b>Sometimes it happens that (almost) no information about a document is passed to the user-function handleDocumentInfo(), most of the
                  properties of the corresponding PHPCrawlerDocumentInfo-object are emtpy.</b><br /><br />
-                 Mostly the reason for this is an error that occurred during the request of the document. In this case,
-                 the PHPCrawlerDocumentInfo-property "error_occured" will be true and "error_string" contains the error-report as human readable string.
+                 Usually the reason for this is an error that occurred during the request of the document. In this case,
+                 the PHPCrawlerDocumentInfo-property "error_occured" will be true, and the "error_string" property contains the error-report as a human readable string.
                  For timeout-errors (like "Socket-stream timed out"), try to increase the connection-timeout and/or the stream-timeout.
               
                  <p id="code">
@@ -54,6 +54,26 @@
                  The reason is an old PCRE-library installed on some CentOS/RedHat systems (mostly version 6.xx).
                  Please update this library to the current version (8.xx) and everything should work fine.
           </li>
+          
+          <li><b>The crawler finds and follows some strange links/urls like "http://mysite.com/(+" that don't exist.</b><br /><br />
+                 By default, the crawler tries to find as many links as possible in documents. By setting some options, you can adjust
+                 the intrnal link-finding algorythm to prevent it from finding (most of) these phantom-links:
+                 
+                 <p id="code">
+                 // Disable aggressive linksearch
+                 $crawler->enableAggressiveLinkSearch(false);
+                 <br /><br />
+                 // Dont't let the crawler look for links in script-parts,<br />
+                 // html-comments etc. of documents.
+                 $crawler->excludeLinkSearchDocumentSections(
+                 &nbsp;&nbsp;PHPCrawlerLinkSearchDocumentSections::ALL_SPECIAL_SECTIONS<br />
+                 );
+                 <br /><br />
+                 // Get sure the crawler only looks for links in HTML-documents<br />
+                 // (this is the default)
+                 $crawler->addLinkSearchContentType("#text/html# i");
+                 </p>
+          </li>
         </ol>
         </div>
         
@@ -65,7 +85,7 @@
         
       </div>
   
-      <div id="footer">Copyright © 2003 - 2014 Uwe Hunfeld phpcrawl@cuab.de</div>
+      <div id="footer">Copyright © 2003 - 2015 Uwe Hunfeld phpcrawl@cuab.de</div>
   </div>
   
 </div>

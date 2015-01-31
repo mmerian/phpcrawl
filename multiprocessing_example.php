@@ -49,7 +49,7 @@ class MyCrawler extends PHPCrawler
 $crawler = new MyCrawler();
 
 // URL to crawl (the entry-page of the mysql-documentation on php.net)
-$crawler->setURL("http://www.php.net/manual/en/book.mysql.php");
+$crawler->setURL("http://php.net/manual/en/book.mysql.php");
 
 // Only receive content of documents with content-type "text/html"
 $crawler->addReceiveContentType("#text/html#");
@@ -58,11 +58,11 @@ $crawler->addReceiveContentType("#text/html#");
 $crawler->addURLFilterRule("#\.(jpg|gif|png|pdf|jpeg|css|js)$# i");
 
 // Every URL within the mysql-documentation looks like 
-// "http://www.php.net/manual/en/function.mysql-affected-rows.php"
-// or "http://www.php.net/manual/en/mysql.setup.php", they all contain
-// "http://www.php.net/manual/en/" followed by  "mysql" somewhere.
+// "http://php.net/manual/en/function.mysql-affected-rows.php"
+// or "http://php.net/manual/en/mysql.setup.php", they all contain
+// "http://php.net/manual/en/" followed by  "mysql" somewhere.
 // So we add a corresponding follow-rule to the crawler.
-$crawler->addURLFollowRule("#^http://www.php.net/manual/en/.*mysql[^a-z]# i");
+$crawler->addURLFollowRule("#^http://php.net/manual/en/.*mysql[^a-z]# i");
 
 // That's it, start crawling using 5 processes
 $crawler->goMultiProcessed(5);

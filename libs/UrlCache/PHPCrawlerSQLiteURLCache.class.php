@@ -80,7 +80,7 @@ class PHPCrawlerSQLiteURLCache extends PHPCrawlerURLCacheBase
     PHPCrawlerBenchmark::stop("fetching_next_url_from_sqlitecache");
      
     // Return URL
-    return new PHPCrawlerURLDescriptor($row["url_rebuild"], $row["link_raw"], $row["linkcode"], $row["linktext"], $row["refering_url"]);
+    return new PHPCrawlerURLDescriptor($row["url_rebuild"], $row["link_raw"], $row["linkcode"], $row["linktext"], $row["refering_url"], $row["url_link_depth"]);
   }
   
   /**
@@ -124,7 +124,8 @@ class PHPCrawlerSQLiteURLCache extends PHPCrawlerURLCacheBase
                                                   ":linktext" => $UrlDescriptor->linktext,
                                                   ":refering_url" => $UrlDescriptor->refering_url,
                                                   ":url_rebuild" => $UrlDescriptor->url_rebuild,
-                                                  ":is_redirect_url" => $UrlDescriptor->is_redirect_url));
+                                                  ":is_redirect_url" => $UrlDescriptor->is_redirect_url,
+                                                  ":url_link_depth" => $UrlDescriptor->url_link_depth));
   }
   
   /**
@@ -249,7 +250,8 @@ class PHPCrawlerSQLiteURLCache extends PHPCrawlerURLCacheBase
                                                          linktext TEXT,
                                                          refering_url TEXT,
                                                          url_rebuild TEXT,
-                                                         is_redirect_url bool);");
+                                                         is_redirect_url bool,
+                                                         url_link_depth integer);");
       
       // Create indexes (seems that indexes make the whole thingy slower)
       $this->PDO->exec("CREATE INDEX IF NOT EXISTS priority_level ON urls (priority_level);");
@@ -271,7 +273,7 @@ class PHPCrawlerSQLiteURLCache extends PHPCrawlerURLCacheBase
     if ($this->PreparedInsertStatement == null)
     {
       // Prepared statement for URL-inserts                                      
-      $this->PreparedInsertStatement = $this->PDO->prepare("INSERT OR IGNORE INTO urls (priority_level, distinct_hash, link_raw, linkcode, linktext, refering_url, url_rebuild, is_redirect_url)
+      $this->PreparedInsertStatement = $this->PDO->prepare("INSERT OR IGNORE INTO urls (priority_level, distinct_hash, link_raw, linkcode, linktext, refering_url, url_rebuild, is_redirect_url, url_link_depth)
                                                             VALUES(:priority_level,
                                                                    :distinct_hash,
                                                                    :link_raw,
@@ -279,7 +281,8 @@ class PHPCrawlerSQLiteURLCache extends PHPCrawlerURLCacheBase
                                                                    :linktext,
                                                                    :refering_url,
                                                                    :url_rebuild,
-                                                                   :is_redirect_url);");
+                                                                   :is_redirect_url,
+                                                                   :url_link_depth);");
     }
   }
   

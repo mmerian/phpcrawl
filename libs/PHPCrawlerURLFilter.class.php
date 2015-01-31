@@ -55,6 +55,13 @@ class PHPCrawlerURLFilter
   public $general_follow_mode = 2;
  
   /**
+   * The maximum crawling-depth
+   *
+   * @var int
+   */
+  public $max_crawling_depth = null;
+  
+  /**
    * Current PHPCrawlerDocumentInfo-object of the current document
    *
    * @var PHPCrawlerDocumentInfo
@@ -104,9 +111,10 @@ class PHPCrawlerURLFilter
   /**
    * Filters out all non-redirect-URLs from the URLs given in the PHPCrawlerDocumentInfo-object
    *
-   * @param PHPCrawlerDocumentInfo $DocumentInfo PHPCrawlerDocumentInfo-object containing all found links of the current document.
+   * @param PHPCrawlerDocumentInfo $DocumentInfo         PHPCrawlerDocumentInfo-object containing all found links of the current document.
+   * @param bool                   $decrease_link_depths
    */
-  public static function keepRedirectUrls(PHPCrawlerDocumentInfo $DocumentInfo)
+  public static function keepRedirectUrls(PHPCrawlerDocumentInfo $DocumentInfo, $decrease_link_depths = false)
   {
     $cnt = count($DocumentInfo->links_found_url_descriptors);
     for ($x=0; $x<$cnt; $x++)
@@ -115,11 +123,15 @@ class PHPCrawlerURLFilter
       {
         $DocumentInfo->links_found_url_descriptors[$x] = null;
       }
+      else if ($decrease_link_depths = true) // Decrease linkdepths
+      {
+        $DocumentInfo->links_found_url_descriptors[$x]->url_link_depth--;
+      }
     }
   }
   
   /**
-   * Checks whether a given URL matches the rules.
+   * Checks whether a given URL matches the rules applied to the URLFilter.
    *
    * @param string $url  The URL as a PHPCrawlerURLDescriptor-object
    * @return bool TRUE if the URL matches the defined rules.
@@ -129,8 +141,14 @@ class PHPCrawlerURLFilter
     // URL-parts of the URL to check against the filter-rules
     $url_parts = PHPCrawlerUtils::splitURL($url->url_rebuild);
     
-    // Kick out all links that r NOT of protocol "http" or "https"
+    // Kick out all links that are NOT of protocol "http" or "https"
     if ($url_parts["protocol"] != "http://" && $url_parts["protocol"] != "https://")
+    {
+      return false;
+    }
+    
+    // Kick out URLs exceeding the maximum crawling-depth
+    if ($this->max_crawling_depth !== null && $url->url_link_depth > $this->max_crawling_depth)
     {
       return false;
     }

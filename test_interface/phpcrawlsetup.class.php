@@ -14,8 +14,8 @@
 # GNU General Public License
 ########################################################################
 
-class PhpcrawlSetup extends PHPCrawler {
-
+class PhpcrawlSetup extends PHPCrawler
+{
   var $setup_array_raw = array(); // Form: $array[method]=argument -> $this->method(argument)
                                   // or    $array[method][0]=argument -> $this->method(argument)
                                   // or    $array[method][1][0]=arg1
@@ -37,14 +37,15 @@ class PhpcrawlSetup extends PHPCrawler {
     $this->setup_array_raw = &$setup_array;
     $this->output_array = &$output_array;
     $this->convertSetupArray();
+    $this->setHTTPProtocolVersion(PHPCrawlerHTTPProtocols::HTTP_1_0);
   }
   
   // Go through setup-array and convert arguments if nessesary, also
   // add the "argument_type" (just for the error-output)
-  function convertSetupArray () {
-  
-    while (list($key)=@each($this->setup_array_raw)) {
-        
+  function convertSetupArray ()
+  {
+    while (list($key)=@each($this->setup_array_raw))
+    { 
       if ($key=="setURL") {
         $this->setup_array[$key]["arg_type"] = "string";
         $this->setup_array[$key]["arg_value"] = &$this->setup_array_raw[$key];
@@ -180,7 +181,6 @@ class PhpcrawlSetup extends PHPCrawler {
   
   }
   
-
   // Go through the setup-array and call the corresponding method of the crawler,
   // via setObjectMethod() and setObjectMethods()
   function setupCrawler () {
@@ -191,20 +191,20 @@ class PhpcrawlSetup extends PHPCrawler {
     }
     else {
       
-      while(list($key)=@each($this->setup_array)) {
+      while(list($key)=@each($this->setup_array))
+      {  
+        if (is_array($this->setup_array[$key]["arg_value"])) {
+          $setup_error = $this->setObjectMethods($key, $this->setup_array[$key]["arg_value"], $this->setup_array[$key]["arg_type"]);
+        }
+        else {
+          $setup_error = $this->setObjectMethod($key, $this->setup_array[$key]["arg_value"], $this->setup_array[$key]["arg_type"]);
+        }
         
-		      if (is_array($this->setup_array[$key]["arg_value"])) {
-		        $setup_error = $this->setObjectMethods($key, $this->setup_array[$key]["arg_value"], $this->setup_array[$key]["arg_type"]);
-		      }
-		      else {
-		        $setup_error = $this->setObjectMethod($key, $this->setup_array[$key]["arg_value"], $this->setup_array[$key]["arg_type"]);
-		      }
-		      
-		      if ($setup_error) {
-		        break;
-		      }
+        if ($setup_error) {
+          break;
+        }
         
-		    }
+      }
     }
     
     return $setup_error;
@@ -268,110 +268,124 @@ class PhpcrawlSetup extends PHPCrawler {
     }
   }
 
-  function handlePageData(&$page_data) {
+  function handleDocumentInfo($DocInfo) {
     
     echo "<table class=intbl>";
     
-    // Loop oveer the output-array and print info if wanted
+    // Loop over the output-array and print info if wanted
     @reset($this->output_array);
-    while (list($key)=@each($this->output_array)) {
-    
-      if ($key=="requested_url")
+    while (list($key)=@each($this->output_array))
+    {
+      if ($key == "requested_url")
       {
-        $str = '<a href="'.$page_data["url"].'" target=blank>'.$page_data["url"].'</a>';
+        $str = '<a href="'.$DocInfo->url.'" target=blank>'.$DocInfo->url.'</a>';
         echo "<tr><td width=130><nobr>Page requested:</nobr></td><td width=470>".$str."</td></tr>";
       }
       
-      if ($key=="http_status_code") {
-        if ($page_data["http_status_code"]) $str = $page_data["http_status_code"];
+      if ($key == "http_status_code")
+      {
+        if ($DocInfo->http_status_code) $str = $DocInfo->http_status_code;
         else $str = "-";
         echo "<tr><td>HTTP-Status:</td><td>".$str."</td></tr>";
       }
       
-      if ($key=="content_type") {
-        if ($page_data["content_type"]) $str = $page_data["content_type"];
+      if ($key=="content_type")
+      {
+        if ($DocInfo->content_type) $str = $DocInfo->content_type;
         else $str = "-";
         echo "<tr><td>Content-Type:</td><td>".$str."</td></tr>";
       }
       
-      if ($key=="content_size") {
-        $str = PHPCrawlerUtils::getHeaderTag ("Content-Length", $page_data["header"]);
+      if ($key=="content_size")
+      {
+        $str = PHPCrawlerUtils::getHeaderValue($DocInfo->header, "content-length");
         if (trim($str)=="") $str = "??";
         echo "<tr><td>Content-Size:</td><td >".$str." bytes</td></tr>";
       }
       
-      if ($key=="content_received") {
-        if ($page_data["received"]==true) $str = "Yes";
+      if ($key=="content_received")
+      {
+        if ($DocInfo->received == true) $str = "Yes";
         else $str = "No";
         echo "<tr><td>Content received:</td><td >".$str."</td></tr>";
       }
       
-      if ($key=="content_received_completely") {
-        if ($page_data["received_completely"]==true) $str = "Yes";
+      if ($key=="content_received_completely")
+      {
+        if ($DocInfo->received_completely == true) $str = "Yes";
         else $str = "No";
         echo "<tr><td><nobr>Received completely:</nobr></td><td >".$str."</td></tr>";
       }
       
       if ($key=="bytes_received")
-        echo "<tr><td>Bytes received:</td><td>".$page_data["bytes_received"]." bytes</td></tr>";
+        echo "<tr><td>Bytes received:</td><td>".$DocInfo->bytes_received." bytes</td></tr>";
       
-      if ($key=="referer_url") {
-        if ($page_data["referer_url"]=="") $str = "-";
+      if ($key=="referer_url")
+      {
+        if ($DocInfo->referer_url == "") $str = "-";
         else $str = &$page_data["referer_url"];
         echo "<tr><td><nobr>Refering URL</nobr>:</td><td >".$str."</td></tr>";
       }
       
       if ($key=="refering_linkcode") {
-        if ($page_data["refering_linkcode"]=="") $str = "-";
-        else {
-          $str = htmlentities($page_data["refering_linkcode"]);
+        if ($DocInfo->refering_linkcode == "") $str = "-";
+        else
+        {
+          $str = htmlentities($DocInfo->refering_linkcode);
           $str = str_replace("\n", "<br>", $str);
         }
         echo "<tr><td valign=top><nobr>Refering linkcode:</nobr></td><td >".$str."</td></tr>";
       }
       
-      if ($key=="refering_link_raw") {
-        if ($page_data["refering_link_raw"]=="") $str = "-";
-        else $str = &$page_data["refering_link_raw"];
+      if ($key=="refering_link_raw")
+      {
+        if ($DocInfo->refering_link_raw == "") $str = "-";
+        else $str = $DocInfo->refering_link_raw;
         echo "<tr><td><nobr>Refering Link RAW:&nbsp;</nobr></td><td >".$str."</td></tr>";
       }
       
-      if ($key=="refering_linktext") {
-        if ($page_data["refering_linktext"]=="") $str = "-";
+      if ($key=="refering_linktext")
+      {
+        if ($DocInfo->refering_linktext == "") $str = "-";
         else {
-          $str = &$page_data["refering_linktext"];
+          $str = $DocInfo->refering_linktext;
           $str = htmlentities($str);
           $str = str_replace("\n", "<br>", $str);
         }
         echo "<tr><td valign=top><nobr>Refering linktext</nobr>:</td><td >".$str."</td></tr>";
       }
       
-      if ($key=="header_send") {
-        if ($page_data["header_send"])  $str = str_replace("\n", "<br>", trim($page_data["header_send"]));
+      if ($key=="header_send")
+      {
+        if ($DocInfo->header_send) $str = str_replace("\n", "<br>", trim(($DocInfo->header_send)));
         else $str = "-";
         echo "<tr><td valign=top>Send header:</td><td >".$str."</td></tr>";
       }
       
-      if ($key=="header") {
-        if ($page_data["header"])  $str = str_replace("\n", "<br>", trim($page_data["header"]));
+      if ($key=="header")
+      {
+        if ($DocInfo->header)  $str = str_replace("\n", "<br>", trim($DocInfo->header));
         else $str = "-";
         echo "<tr><td valign=top>Received header:</td><td >".$str."</td></tr>";
       }
       
-      if ($key=="nr_found_links") {
-        $str = count($page_data["links_found"]);
+      if ($key=="nr_found_links")
+      {
+        $str = count($DocInfo->links_found);
         echo "<tr><td valign=top>Links found:</td><td >".$str."</td></tr>";
       }
       
-      if ($key=="all_found_links") {
+      if ($key=="all_found_links")
+      {
         echo "<tr><td valign=top>List of found links:</td>";
         echo "<td>";
         
-        for ($x=0; $x<count($page_data["links_found"]); $x++) {
-          echo $page_data["links_found"][$x]["url_rebuild"]."<br>";
+        for ($x=0; $x<count($DocInfo->links_found_url_descriptors); $x++)
+        {
+          echo $DocInfo->links_found_url_descriptors[$x]->url_rebuild."<br>";
         }
         
-        if (count($page_data["links_found"])==0)
+        if (count($DocInfo->links_found_url_descriptors) == 0)
         {
           echo "-";
         }
@@ -380,34 +394,38 @@ class PhpcrawlSetup extends PHPCrawler {
         echo "</tr>";
       }
       
-      if ($key=="received_to_file") {
-        if ($page_data["received_to_file"]) $str = "Yes";
+      if ($key=="received_to_file")
+      {
+        if ($DocInfo->received_to_file) $str = "Yes";
         else $str = "No";
         echo "<tr><td valign=top>Received to TMP-file:</td><td >".$str."</td></tr>";
       }
       
-      if ($key=="tmpfile_name_size") {
-        if ($page_data["content_tmp_file"]) $str = $page_data["content_tmp_file"]." (".filesize($page_data["content_tmp_file"])." bytes)";
+      if ($key=="tmpfile_name_size")
+      {
+        if ($DocInfo->content_tmp_file) $str = $DocInfo->content_tmp_file." (".filesize($DocInfo->content_tmp_file)." bytes)";
         else $str = "-";
         echo "<tr><td valign=top>Content TMP-file:</td><td >".$str."</td></tr>";
       }
     
-      if ($key=="received_to_memory") {
-        if ($page_data["received_to_memory"]) $str = "Yes";
+      if ($key=="received_to_memory")
+      {
+        if ($DocInfo->received_to_memory) $str = "Yes";
         else $str = "No";
         echo "<tr><td valign=top>Received to memory:</td><td >".$str."</td></tr>";
       }
       
-      if ($key=="memory_content_size") {
-        echo "<tr><td valign=top>Memory-content-size:</td><td >".strlen($page_data["source"])." bytes</td></tr>";
+      if ($key=="memory_content_size")
+      {
+        echo "<tr><td valign=top>Memory-content-size:</td><td >".strlen($DocInfo->source)." bytes</td></tr>";
       }
     }
     
     // Output error if theres one
-    if ($page_data["error_string"])
+    if ($DocInfo->error_occured)
       echo "<tr>
             <td class=red>Error:</td>
-            <td class=red>".$page_data["error_string"]."</td>
+            <td class=red>".$DocInfo->error_string."</td>
             </tr>";
             
     echo "</table> <br>";

@@ -24,6 +24,54 @@
         <div id="content">
         <h3>Version-History / Changelog</h3><br />
         
+        <b>Version 0.83</b><br>
+        2015/01/27<br>
+        
+        <ul class="changelog">
+        
+        <li>Fixed bug #74: The crawler now doesn't treat hostnames case sensitive anymore and won't follow URLs differing just in hostname
+            letter case more than one time (like "www.foo.net/page" and "www.FOO.net/page")</li>
+        
+        <li>Fixed bug #38: Detection for socket-EOF sometimes failed on SSL-connections under windows-OS causing a (infinite) hang of the crawling-process.</li>
+        
+        <li>Fixed bug #59: If obeyRobotsTxt() is set to TRUE, the crawler now doesn't throw any errors anymore when parsing any malformed robots.txt-files.</li>
+        
+        <li>Fixed bug #36: The crawler now uses the correct user-agent identification for requests of robots.txt-documents when it
+            was changed by the user with setUserAgentString().</li>
+            
+        <li>A second, optional parameter "robots_txt_uri" is now available for obeyRobotsTxt().
+            This let's the user alternatively specify the location of the robots.txt-file to obey manually as a URI (URL or file).</li>
+            
+        <li>Fixed bug #71: When running phpcrawl from the test-interface-GUI and output "Content-Size" was chosen, a
+            "PHP Fatal error: Call to undefined method PHPCrawlerUtils::getHeaderTag()" was thrown.</li>
+
+        <li>Fixed bug/issue #61: Renamed method setPageLimit() to setRequestLimit() (because that is what this method does,
+            it limits the number of requests). The method setPageLimit() still is present for compatibility reasons though, but
+            was marked as deprecated.
+            Also, all requests resulting in a server answer other than "2xx" are marked as "document not received" now 
+            (PHPCrawlerDocumentInfo::received property). This makes the option setRequestLimit() with the optional
+            "only_count_received_documents"-parameter set to behave as expected.</li>
+
+        <li>Feature Request #11: Added ability to set a limit to the crawling-depth, method setCrawlingDepthLimit() added.
+            Property PHPCrawlerDocumentInfo::url_link_depth added.</li>
+
+        <li>Fixed bug #79: When using phpcrawl in multiprocess mode MPMODE_PARENT_EXECUTES_USERCODE, the array
+            PHPCrawlerDocumentInfo::links_found_url_descriptors sometimes was missing some found URLs (and contained a lot
+            of NULL entries).</li>
+
+        <li>Fixed undocumented bug: Links with a unknown protocol containing a minus (like "android-app://...") get rebuild
+            correctly now and won't be followed anymore.</li>
+
+        <li>Fixed bug #76: Links containig numerical-reference-entities or hexadecimal-reference-entities (like &#x2f;) get
+            rebuild and followed correctly now.</li>
+           
+        <li>Fixed bug #25: Added an option/method "excludeLinkSearchDocumentSections()" to specify what HTML-document-sections
+        should get ignored by the internal link-finding algorithm.
+        This gives users the opportunity to prevent the crawler from finding links in HTML-comments and &lt;script&gt;-areas of
+        HTML-pages (as reported/asked in the bugreport).</li>
+        
+        </ul>
+        
         <b>Version 0.82</b><br>
         2014/01/16<br>
         
@@ -529,7 +577,7 @@
         
       </div>
   
-      <div id="footer">Copyright © 2003 - 2014 Uwe Hunfeld phpcrawl@cuab.de</div>
+      <div id="footer">Copyright © 2003 - 2015 Uwe Hunfeld phpcrawl@cuab.de</div>
   </div>
   
 </div>
