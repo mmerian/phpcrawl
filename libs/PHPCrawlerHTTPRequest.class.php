@@ -532,6 +532,16 @@ class PHPCrawlerHTTPRequest
     
     // Get IP for hostname
     $ip_address = $this->DNSCache->getIP($this->url_parts["host"]);
+
+    // since PHP 5.6 SNI_server_name is deprecated
+    if (version_compare(PHP_VERSION, '5.6.0') >= 0)
+    {
+      $serverName = 'peer_name';
+    }
+    else
+    {
+      $serverName = 'SNI_server_name';
+    }
     
     // Open socket
     if ($this->proxy != null)
@@ -544,7 +554,11 @@ class PHPCrawlerHTTPRequest
       // If ssl -> perform Server name indication
       if ($this->url_parts["protocol"] == "https://")
       {
-        $context = stream_context_create(array('ssl' => array('SNI_server_name' => $this->url_parts["host"])));
+        $context = stream_context_create(array(
+          'ssl' => array(
+            $serverName => $this->url_parts["host"],
+          ),
+        ));
         $this->socket = @stream_socket_client($protocol_prefix.$ip_address.":".$this->url_parts["port"], $error_code, $error_str,
                                               $this->socketConnectTimeout, STREAM_CLIENT_CONNECT, $context);
       }
