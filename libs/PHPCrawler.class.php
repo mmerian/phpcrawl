@@ -10,49 +10,49 @@
 class PHPCrawler
 {
   public $class_version = "0.83rc1";
-  
+
   /**
    * The PHPCrawlerHTTPRequest-Object
    *
    * @var PHPCrawlerHTTPRequest
    */
   protected $PageRequest;
-  
+
   /**
    * The PHPCrawlerLinkCache-Object
    *
    * @var PHPCrawlerURLCache
    */
   protected $LinkCache;
-  
+
   /**
    * The PHPCrawlerCookieCache-Object
    *
    * @var  PHPCrawlerCookieCache
    */
   protected $CookieCache;
-  
+
   /**
    * The UrlFilter-Object
    *
    * @var PHPCrawlerURLFilter
    */
   protected $UrlFilter;
-  
+
   /**
    * The RobotsTxtParser-Object
    *
    * @var PHPCrawlerRobotsTxtParser
    */
   protected $RobotsTxtParser;
-  
+
   /**
    * UserSendDataCahce-object.
    *
    * @var PHPCrawlerUserSendDataCache
    */
   protected $UserSendDataCache;
-  
+
   /**
    * The URL the crawler should start with.
    *
@@ -61,239 +61,239 @@ class PHPCrawler
    * @var string
    */
   protected $starting_url = "";
-  
+
   /**
    * Defines whether robots.txt-file should be obeyed
    *
    * @val bool
    */
   protected $obey_robots_txt = false;
-  
+
   /**
    * Location of robots.txt-file to obey as URI
    *
    * @val string
    */
   protected $robots_txt_uri;
-  
+
   /**
    * Limit of requests to preform
    *
    * @var int
    */
   protected $request_limit = 0;
-  
+
   /**
    * Limit of bytes to receive
    *
    * @var int The limit in bytes
    */
   protected $traffic_limit = 0;
-  
+
   /**
    * Defines if only documents that were received will be counted.
    *
    * @var bool
    */
   protected $only_count_received_documents = true;
-  
+
   /**
    * Flag cookie-handling enabled/diabled
    *
    * @var bool
    */
   protected $cookie_handling_enabled = true;
-  
+
   /**
    * The reason why the process was aborted/finished.
    *
    * @var int One of the PHPCrawlerAbortReasons::ABORTREASON-constants.
    */
   protected $porcess_abort_reason = null;
-  
+
   /**
    * Flag indicating whether this instance is running in a child-process (if crawler runs multi-processed)
    */
   protected $is_chlid_process = false;
-  
+
   /**
    * Flag indicating whether this instance is running in the parent-process (if crawler runs multi-processed)
    */
   protected $is_parent_process = false;
-  
+
   /**
    * URl cache-type.
    *
    * @var int One of the PHPCrawlerUrlCacheTypes::URLCACHE..-constants.
    */
   protected $url_cache_type = 1;
-  
+
   /**
    * UID of this instance of the crawler
    *
    * @var string
    */
   protected $crawler_uniqid = null;
-  
+
   /**
    * Base-directory for temporary directories
    *
    * @var string
    */
   protected $working_base_directory;
-  
+
   /**
    * Complete path to the temporary directory
    *
    * @var string
    */
   protected $working_directory = null;
-  
+
   protected $link_priority_array = array();
-  
+
   /**
    * Number of child-process (NOT the PID!)
    *
    * @var int
    */
   protected $child_process_number = null;
-  
+
   protected $child_process_count = 1;
-  
+
   /**
    * PHPCrawlerProcessCommunication-object
    *
    * @var PHPCrawlerProcessHandler
    */
   protected $ProcessHandler = null;
-  
+
   /**
    * PHPCrawlerStatusHandler-object
    *
    * @var PHPCrawlerStatusHandler
    */
   protected $CrawlerStatusHandler = null;
-  
+
   /**
    * Multiprocess-mode the crawler is runnung in.
    *
    * @var int One of the PHPCrawlerMultiProcessModes-constants
    */
   protected $multiprocess_mode = 0;
-  
+
   /**
    * DocumentInfoQueue-object
    *
    * @var PHPCrawlerDocumentInfoQueue
    */
   protected $DocumentInfoQueue = null;
-  
+
   protected $follow_redirects_till_content = true;
-  
+
   /**
    * Flag indicating whether resumtion is activated
    *
    * @var PHPCrawlerDocumentInfoQueue
    */
   protected $resumtion_enabled = false;
-  
+
   /**
    * Request-delay-time
    *
    * @var float
    */
   protected $request_delay_time = null;
-  
+
   /**
    * Flag indicating whether the URL-cahce was purged at the beginning of a crawling-process
    */
   protected $urlcache_purged = false;
-  
+
   /**
    * Initiates a new crawler.
    */
   public function __construct()
-  { 
+  {
     // Create uniqid for this crawlerinstance
     $this->crawler_uniqid = getmypid().time();
-    
+
     // Include needed class-files
     $classpath = dirname(__FILE__);
-    
+
     // Utils-classes
     if (!class_exists("PHPCrawlerUtils")) include_once($classpath."/Utils/PHPCrawlerUtils.class.php");
     if (!class_exists("PHPCrawlerEncodingUtils")) include_once($classpath."/Utils/PHPCrawlerEncodingUtils.class.php");
-    
+
     // URL-Cache-classes
     if (!class_exists("PHPCrawlerURLCacheBase")) include_once($classpath."/UrlCache/PHPCrawlerURLCacheBase.class.php");
     if (!class_exists("PHPCrawlerMemoryURLCache")) include_once($classpath."/UrlCache/PHPCrawlerMemoryURLCache.class.php");
     if (!class_exists("PHPCrawlerSQLiteURLCache")) include_once($classpath."/UrlCache/PHPCrawlerSQLiteURLCache.class.php");
-    
+
     // PageRequest-class
     if (!class_exists("PHPCrawlerHTTPRequest")) include_once($classpath."/PHPCrawlerHTTPRequest.class.php");
     $this->PageRequest = new PHPCrawlerHTTPRequest();
     $this->PageRequest->setHeaderCheckCallbackFunction($this, "handleHeaderInfo");
-      
+
     // Cookie-Cache-class
     if (!class_exists("PHPCrawlerCookieCacheBase")) include_once($classpath."/CookieCache/PHPCrawlerCookieCacheBase.class.php");
     if (!class_exists("PHPCrawlerMemoryCookieCache")) include_once($classpath."/CookieCache/PHPCrawlerMemoryCookieCache.class.php");
     if (!class_exists("PHPCrawlerSQLiteCookieCache")) include_once($classpath."/CookieCache/PHPCrawlerSQLiteCookieCache.class.php");
-    
+
     // URL-filter-class
     if (!class_exists("PHPCrawlerURLFilter")) include_once($classpath."/PHPCrawlerURLFilter.class.php");
     $this->UrlFilter = new PHPCrawlerURLFilter();
-    
+
     // RobotsTxtParser-class
     if (!class_exists("PHPCrawlerRobotsTxtParser")) include_once($classpath."/PHPCrawlerRobotsTxtParser.class.php");
     $this->RobotsTxtParser = new PHPCrawlerRobotsTxtParser();
-    
+
     // ProcessReport-class
     if (!class_exists("PHPCrawlerProcessReport")) include_once($classpath."/PHPCrawlerProcessReport.class.php");
-    
+
     // UserSendDataCache-class
     if (!class_exists("PHPCrawlerUserSendDataCache")) include_once($classpath."/PHPCrawlerUserSendDataCache.class.php");
     $this->UserSendDataCache = new PHPCrawlerUserSendDataCache();
-    
+
     // URLDescriptor-class
     if (!class_exists("PHPCrawlerURLDescriptor")) include_once($classpath."/PHPCrawlerURLDescriptor.class.php");
-    
+
     // PageInfo-class
     if (!class_exists("PHPCrawlerDocumentInfo")) include_once($classpath."/PHPCrawlerDocumentInfo.class.php");
-    
+
     // Benchmark-class
     if (!class_exists("PHPCrawlerBenchmark")) include_once($classpath."/PHPCrawlerBenchmark.class.php");
-    
+
     // URLDescriptor-class
     if (!class_exists("PHPCrawlerUrlPartsDescriptor")) include_once($classpath."/PHPCrawlerUrlPartsDescriptor.class.php");
-    
+
     // CrawlerStatus-class
     if (!class_exists("PHPCrawlerStatus")) include_once($classpath."/PHPCrawlerStatus.class.php");
-    
+
     // AbortReasons-class
     if (!class_exists("PHPCrawlerAbortReasons")) include_once($classpath."/Enums/PHPCrawlerAbortReasons.class.php");
-    
+
     // RequestErrors-class
     if (!class_exists("PHPCrawlerRequestErrors")) include_once($classpath."/Enums/PHPCrawlerRequestErrors.class.php");
-    
+
     // PHPCrawlerUrlCacheTypes-class
     if (!class_exists("PHPCrawlerUrlCacheTypes")) include_once($classpath."/Enums/PHPCrawlerUrlCacheTypes.class.php");
-    
+
     // PHPCrawlerMultiProcessModes-class
     if (!class_exists("PHPCrawlerMultiProcessModes")) include_once($classpath."/Enums/PHPCrawlerMultiProcessModes.class.php");
-    
+
     // PHPCrawlerProcessHandler-class
     if (!class_exists("PHPCrawlerProcessHandler")) include_once($classpath."/ProcessCommunication/PHPCrawlerProcessHandler.class.php");
-    
+
     // PHPCrawlerStatusHandler-class
     if (!class_exists("PHPCrawlerStatusHandler")) include_once($classpath."/ProcessCommunication/PHPCrawlerStatusHandler.class.php");
-    
+
     // PHPCrawlerDocumentInfoQueue-class
     if (!class_exists("PHPCrawlerDocumentInfoQueue")) include_once($classpath."/ProcessCommunication/PHPCrawlerDocumentInfoQueue.class.php");
-    
+
     // Set default temp-dir
     $this->working_base_directory = PHPCrawlerUtils::getSystemTempDir();
   }
-  
+
   /**
    * Initiates a crawler-process
    */
@@ -301,51 +301,51 @@ class PHPCrawler
   {
     // Create working directory
     $this->createWorkingDirectory();
-    
+
     // Setup url-cache
-    if ($this->url_cache_type == PHPCrawlerUrlCacheTypes::URLCACHE_SQLITE) 
+    if ($this->url_cache_type == PHPCrawlerUrlCacheTypes::URLCACHE_SQLITE)
       $this->LinkCache = new PHPCrawlerSQLiteURLCache($this->working_directory."urlcache.db3", true);
     else
       $this->LinkCache = new PHPCrawlerMemoryURLCache();
-    
+
     // Perge/cleanup SQLite-urlcache for resumed crawling-processes (only ONCE!)
     if ($this->url_cache_type == PHPCrawlerUrlCacheTypes::URLCACHE_SQLITE && $this->urlcache_purged == false)
     {
       $this->LinkCache->purgeCache();
       $this->urlcache_purged = true;
     }
-    
+
     // Setup cookie-cache (use SQLite-cache if crawler runs multi-processed)
     if ($this->url_cache_type == PHPCrawlerUrlCacheTypes::URLCACHE_SQLITE)
       $this->CookieCache = new PHPCrawlerSQLiteCookieCache($this->working_directory."cookiecache.db3", true);
     else $this->CookieCache = new PHPCrawlerMemoryCookieCache();
-    
+
     // ProcessHandler
     $this->ProcessHandler = new PHPCrawlerProcessHandler($this->crawler_uniqid, $this->working_directory);
-    
+
     // Setup PHPCrawlerStatusHandler
     $this->CrawlerStatusHandler = new PHPCrawlerStatusHandler($this->crawler_uniqid, $this->working_directory);
     $this->setupCrawlerStatusHandler();
-    
+
     // DocumentInfo-Queue
     if ($this->multiprocess_mode == PHPCrawlerMultiProcessModes::MPMODE_PARENT_EXECUTES_USERCODE)
       $this->DocumentInfoQueue = new PHPCrawlerDocumentInfoQueue($this->working_directory."doc_queue.db3", true);
-    
+
     // Set tmp-file for PageRequest
-    $this->PageRequest->setTmpFile($this->working_directory."phpcrawl_".getmypid().".tmp");
-    
+    $this->PageRequest->setWorkingDirectory($this->working_directory."phpcrawl_".getmypid().".tmp");
+
     // Pass url-priorities to link-cache
     $this->LinkCache->addLinkPriorities($this->link_priority_array);
-                
+
     // Pass base-URL to the UrlFilter
     $this->UrlFilter->setBaseURL($this->starting_url);
-    
+
     // Add the starting-URL to the url-cache with link-depth 0
     $url_descriptor = new PHPCrawlerURLDescriptor($this->starting_url);
     $url_descriptor->url_link_depth = 0;
     $this->LinkCache->addUrl($url_descriptor);
   }
-  
+
   /**
    * Starts the crawling process in single-process-mode.
    *
@@ -359,13 +359,13 @@ class PHPCrawler
     // Process robots.txt
     if ($this->obey_robots_txt == true)
       $this->processRobotsTxt();
-    
+
     $this->startChildProcessLoop();
   }
-  
+
   /**
    * Starts the cralwer by using multi processes.
-   * 
+   *
    * When using this method instead of the {@link go()}-method to start the crawler, phpcrawl will use the given
    * number of processes simultaneously for spidering the target-url.
    * Using multi processes will speed up the crawling-progress dramatically in most cases.
@@ -395,7 +395,7 @@ class PHPCrawler
    *
    * The cralwer uses multi processes simultaneously for spidering the target URL, and every chld-process executes
    * the usercode provided to the overridable function {@link handleDocumentInfo()} directly from it's process. This
-   * means that the <b>usercode gets executed simultaneously</b> by the different child-processes and you should 
+   * means that the <b>usercode gets executed simultaneously</b> by the different child-processes and you should
    * take care of concurrent file/data/handle-accesses proberbly (if used).
    *
    * When using this mode and you use any handles like database-connections or filestreams in your extended
@@ -418,56 +418,56 @@ class PHPCrawler
    * @section 1 Basic settings
    */
   public function goMultiProcessed($process_count = 3, $multiprocess_mode = 1)
-  { 
+  {
     $this->multiprocess_mode = $multiprocess_mode;
     $this->child_process_count = $process_count;
-      
+
     // Check if fork is supported
     if (!function_exists("pcntl_fork"))
     {
       throw new Exception("PHPCrawl running with multi processes not supported in this PHP-environment (function pcntl_fork() missing).".
                           "Try running from command-line (cli) and/or installing the PHP PCNTL-extension.");
     }
-    
+
     if (!function_exists("sem_get"))
     {
       throw new Exception("PHPCrawl running with multi processes not supported in this PHP-environment (function sem_get() missing).".
                           "Try installing the PHP SEMAPHORE-extension.");
     }
-    
+
     if (!function_exists("posix_kill"))
     {
       throw new Exception("PHPCrawl running with multi processes not supported in this PHP-environment (function posix_kill() missing).".
                           "Try installing the PHP POSIX-extension.");
     }
-    
+
     if (!class_exists("PDO"))
     {
       throw new Exception("PHPCrawl running with multi processes not supported in this PHP-environment (class PDO missing).".
                           "Try installing the PHP PDO-extension.");
     }
-    
+
     PHPCrawlerBenchmark::start("crawling_process");
-    
+
     // Set url-cache-type to sqlite.
     $this->url_cache_type = PHPCrawlerUrlCacheTypes::URLCACHE_SQLITE;
-    
+
     // Init process
     $this->initCrawlerProcess();
-    
+
     // Process robots.txt
     if ($this->obey_robots_txt == true)
       $this->processRobotsTxt();
-    
+
     // Fork off child-processes
     $pids = array();
-    
+
     for($i=1; $i<=$process_count; $i++)
     {
       $pids[$i] = pcntl_fork();
 
       if(!$pids[$i])
-      {   
+      {
         // Childprocess goes here
         $this->is_chlid_process = true;
         $this->child_process_number = $i;
@@ -475,34 +475,34 @@ class PHPCrawler
         $this->startChildProcessLoop();
       }
     }
-        
+
     // Set flag "parent-process"
     $this->is_parent_process = true;
-    
+
     // Determinate all child-PIDs
     $this->child_pids = $this->ProcessHandler->getChildPIDs($process_count);
-    
+
     // If crawler runs in MPMODE_PARENT_EXECUTES_USERCODE-mode -> start controller-loop
     if ($this->multiprocess_mode == PHPCrawlerMultiProcessModes::MPMODE_PARENT_EXECUTES_USERCODE)
     {
       $this->startControllerProcessLoop();
     }
-     
+
     // Wait for childs to finish
     for ($i=1; $i<=$process_count; $i++)
     {
       pcntl_waitpid($pids[$i], $status, WUNTRACED);
     }
-    
+
     // Get crawler-status (needed for process-report)
     $this->crawlerStatus = $this->CrawlerStatusHandler->getCrawlerStatus();
-    
+
     // Cleanup crawler
     $this->cleanup();
-    
+
     PHPCrawlerBenchmark::stop("crawling_process");
   }
-  
+
   /**
    * Starts the loop of the controller-process (main-process).
    */
@@ -510,40 +510,40 @@ class PHPCrawler
   {
     // If multiprocess-mode is not MPMODE_PARENT_EXECUTES_USERCODE -> exit process
     if ($this->multiprocess_mode != PHPCrawlerMultiProcessModes::MPMODE_PARENT_EXECUTES_USERCODE) exit;
-    
+
     $this->initCrawlerProcess();
     $this->initChildProcess();
 
     while (true)
-    { 
+    {
       // Check for abort
       if ($this->checkForAbort() !== null)
       {
         $this->ProcessHandler->killChildProcesses();
         break;
       }
-      
+
       // Get next DocInfo-object from queue
       $DocInfo = $this->DocumentInfoQueue->getNextDocumentInfo();
-      
+
       if ($DocInfo == null)
-      { 
+      {
         // If there are nor more links in cache AND there are no more DocInfo-objects in queue -> passedthrough
         if ($this->LinkCache->containsURLs() == false && $this->DocumentInfoQueue->getDocumentInfoCount() == 0)
         {
           $this->CrawlerStatusHandler->updateCrawlerStatus(null, PHPCrawlerAbortReasons::ABORTREASON_PASSEDTHROUGH);
         }
-        
+
         usleep(100000);
         continue;
       }
-      
+
       // Update crawler-status
       $this->CrawlerStatusHandler->updateCrawlerStatus($DocInfo);
-      
+
       // Call the "abstract" method handlePageData
       $user_abort = false;
-      
+
       // If defined by user -> call old handlePageData-method, otherwise don't (because of high memory-usage)
       if (method_exists($this, "handlePageData"))
       {
@@ -551,42 +551,42 @@ class PHPCrawler
         $user_return_value = $this->handlePageData($page_info);
         if ($user_return_value < 0) $user_abort = true;
       }
-      
+
       // Call the "abstract" method handleDocumentInfo
       $user_return_value = $this->handleDocumentInfo($DocInfo);
       if ($user_return_value < 0) $user_abort = true;
-        
+
       // Update status if user aborted process
-      if ($user_abort == true) 
+      if ($user_abort == true)
         $this->CrawlerStatusHandler->updateCrawlerStatus(null, PHPCrawlerAbortReasons::ABORTREASON_USERABORT);
     }
   }
-  
+
   /**
    * Starts the loop of a child-process.
    */
   protected function startChildProcessLoop()
-  { 
+  {
     $this->initCrawlerProcess();
-    
+
     // Call overidable method initChildProcess()
     $this->initChildProcess();
-    
+
     // Start benchmark (if single-processed)
     if ($this->is_chlid_process == false)
     {
       PHPCrawlerBenchmark::start("crawling_process");
     }
-    
+
     // Init vars
     $stop_crawling = false;
-    
+
     // Main-Loop
     while ($stop_crawling == false)
-    { 
+    {
       // Get next URL from cache
       $UrlDescriptor = $this->LinkCache->getNextUrl();
-      
+
       // Process URL
       if ($UrlDescriptor != null)
       {
@@ -596,7 +596,7 @@ class PHPCrawler
       {
         usleep(500000);
       }
-      
+
       if ($this->multiprocess_mode != PHPCrawlerMultiProcessModes::MPMODE_PARENT_EXECUTES_USERCODE)
       {
         // If there's nothing more to do
@@ -605,7 +605,7 @@ class PHPCrawler
           $stop_crawling = true;
           $this->CrawlerStatusHandler->updateCrawlerStatus(null, PHPCrawlerAbortReasons::ABORTREASON_PASSEDTHROUGH);
         }
-        
+
         // Check for abort form other processes
         if ($this->checkForAbort() !== null) $stop_crawling = true;
       }
@@ -617,19 +617,19 @@ class PHPCrawler
       if ($this->multiprocess_mode == PHPCrawlerMultiProcessModes::MPMODE_PARENT_EXECUTES_USERCODE) return;
       else exit;
     }
-    
+
     $this->crawlerStatus = $this->CrawlerStatusHandler->getCrawlerStatus();
-       
+
     // Cleanup crawler
     $this->cleanup();
-    
+
     // Stop benchmark (if single-processed)
     if ($this->is_chlid_process == false)
     {
       PHPCrawlerBenchmark::stop("crawling_process");
     }
   }
-  
+
   /**
    * Receives and processes the given URL
    *
@@ -637,60 +637,60 @@ class PHPCrawler
    * @return bool TURE if the crawling-process should be aborted after processig the URL, otherwise FALSE.
    */
   protected function processUrl(PHPCrawlerURLDescriptor $UrlDescriptor)
-  { 
+  {
     // Check for abortion from other processes first if mode is MPMODE_CHILDS_EXECUTES_USERCODE
     if ($this->multiprocess_mode == PHPCrawlerMultiProcessModes::MPMODE_CHILDS_EXECUTES_USERCODE)
-    { 
+    {
       // Check for abortion (any limit reached?)
       if ($this->checkForAbort() !== null) return true;
     }
-    
+
     PHPCrawlerBenchmark::start("processing_url");
-    
+
     // Setup HTTP-request
     $this->PageRequest->setUrl($UrlDescriptor);
-    
+
     // Add cookies to request
     if ($this->cookie_handling_enabled == true)
       $this->PageRequest->addCookieDescriptors($this->CookieCache->getCookiesForUrl($UrlDescriptor->url_rebuild));
-    
+
     // Add basic-authentications to request
     $authentication = $this->UserSendDataCache->getBasicAuthenticationForUrl($UrlDescriptor->url_rebuild);
     if ($authentication != null)
     {
       $this->PageRequest->setBasicAuthentication($authentication["username"], $authentication["password"]);
     }
-    
+
     // Add post-data to request
     $post_data = $this->UserSendDataCache->getPostDataForUrl($UrlDescriptor->url_rebuild);
     while (list($post_key, $post_value) = @each($post_data))
     {
       $this->PageRequest->addPostData($post_key, $post_value);
     }
-    
+
     // Do request
     $this->delayRequest();
     $PageInfo = $this->PageRequest->sendRequest();
-    
+
     // Remove post and cookie-data from request-object
     $this->PageRequest->clearCookies();
     $this->PageRequest->clearPostData();
-    
+
     // Complete PageInfo-Object with benchmarks
     PHPCrawlerBenchmark::stop("processing_url");
     $PageInfo->benchmarks = PHPCrawlerBenchmark::getAllBenchmarks();
-    
+
     // Call user-methods, update craler-status and check for abortion here if crawler doesn't run in MPMODE_PARENT_EXECUTES_USERCODE
     if ($this->multiprocess_mode != PHPCrawlerMultiProcessModes::MPMODE_PARENT_EXECUTES_USERCODE)
-    { 
+    {
       // Check for abortion (any limit reached?)
       if ($this->checkForAbort() !== null) return true;
-      
+
       // Update crawler-status
       $this->CrawlerStatusHandler->updateCrawlerStatus($PageInfo);
-      
+
       $user_abort = false;
-      
+
       // If defined by user -> call old handlePageData-method, otherwise don't (because of high memory-usage)
       if (method_exists($this, "handlePageData"))
       {
@@ -698,32 +698,32 @@ class PHPCrawler
         $user_return_value = $this->handlePageData($page_info);
         if ($user_return_value < 0) $user_abort = true;
       }
-      
+
       // Call the "abstract" method handleDocumentInfo
       $user_return_value = $this->handleDocumentInfo($PageInfo);
       if ($user_return_value < 0) $user_abort = true;
-      
+
       // Update status if user aborted process
-      if ($user_abort == true) 
+      if ($user_abort == true)
       {
         $this->CrawlerStatusHandler->updateCrawlerStatus(null, PHPCrawlerAbortReasons::ABORTREASON_USERABORT);
       }
-      
+
       // Check for abortion again (any limit reached?)
       if ($this->checkForAbort() !== null) return true;
     }
-    
+
     // Add document to the DocumentInfoQueue if mode is MPMODE_PARENT_EXECUTES_USERCODE
     if ($this->multiprocess_mode == PHPCrawlerMultiProcessModes::MPMODE_PARENT_EXECUTES_USERCODE)
     {
       $this->DocumentInfoQueue->addDocumentInfo($PageInfo);
     }
-    
+
     // Filter found URLs by defined rules
     if ($this->follow_redirects_till_content == true)
     {
       $crawler_status = $this->CrawlerStatusHandler->getCrawlerStatus();
-      
+
       // If content wasn't found so far and content was found NOW
       if ($crawler_status->first_content_url == null && $PageInfo->http_status_code == 200)
       {
@@ -735,7 +735,7 @@ class PHPCrawler
       else if ($crawler_status->first_content_url == null)
       {
         $this->UrlFilter->keepRedirectUrls($PageInfo, true); // Content wasn't found so far, so just keep redirect-urls and
-                                                             // decrease lindepth 
+                                                             // decrease lindepth
       }
       else if ($crawler_status->first_content_url != null)
       {
@@ -747,33 +747,33 @@ class PHPCrawler
     {
       $this->UrlFilter->filterUrls($PageInfo);
     }
-    
+
     // Add Cookies to Cookie-cache
     if ($this->cookie_handling_enabled == true) $this->CookieCache->addCookies($PageInfo->cookies);
 
     // Add filtered links to URL-cache
     $this->LinkCache->addURLs($PageInfo->links_found_url_descriptors);
-    
+
      // Mark URL as "followed"
     $this->LinkCache->markUrlAsFollowed($UrlDescriptor);
-    
+
     PHPCrawlerBenchmark::resetAll(array("crawling_process"));
-    
+
     return false;
   }
-  
+
   protected function processRobotsTxt()
   {
     PHPCrawlerBenchmark::start("processing_robots_txt");
-    
+
     $robotstxt_rules = $this->RobotsTxtParser->parseRobotsTxt(new PHPCrawlerURLDescriptor($this->starting_url),
                                                               $this->PageRequest->userAgentString,
                                                               $this->robots_txt_uri);
     $this->UrlFilter->addURLFilterRules($robotstxt_rules);
-    
+
     PHPCrawlerBenchmark::stop("processing_robots_txt");
   }
-  
+
   /**
    * Checks if the crawling-process should be aborted.
    *
@@ -782,24 +782,24 @@ class PHPCrawler
   protected function checkForAbort()
   {
     PHPCrawlerBenchmark::start("checkning_for_abort");
-    
+
     $abort_reason = null;
-     
+
     // Get current status
     $crawler_status = $this->CrawlerStatusHandler->getCrawlerStatus();
-    
+
     // if crawlerstatus already marked for ABORT
     if ($crawler_status->abort_reason !== null)
     {
       $abort_reason = $crawler_status->abort_reason;
     }
-    
+
     // Check for reached limits
-    
+
     // If traffic-limit is reached
     if ($this->traffic_limit > 0 && $crawler_status->bytes_received >= $this->traffic_limit)
       $abort_reason = PHPCrawlerAbortReasons::ABORTREASON_TRAFFICLIMIT_REACHED;
-    
+
     // If request-limit is set
     if ($this->request_limit > 0)
     {
@@ -813,14 +813,14 @@ class PHPCrawler
         $abort_reason = PHPCrawlerAbortReasons::ABORTREASON_FILELIMIT_REACHED;
       }
     }
-    
+
     $this->CrawlerStatusHandler->updateCrawlerStatus(null, $abort_reason);
-    
+
     PHPCrawlerBenchmark::stop("checkning_for_abort");
-    
+
     return $abort_reason;
   }
-  
+
   /**
    * Delays the execution of the next request depending on the setRequestDelayTime()-setting and updates
    * the last-request-time afterwards
@@ -833,19 +833,19 @@ class PHPCrawler
       while (true)
       {
         $crawler_status = $this->CrawlerStatusHandler->getCrawlerStatus();
-      
+
         // Wait if the time of the last request isn't way back enough
         if ($crawler_status->last_request_time + $this->request_delay_time > PHPCrawlerBenchmark::getmicrotime())
           usleep($this->request_delay_time * 1000000 / 2);
         else
           break;
       }
-      
+
       // Update last-request-time
       $this->CrawlerStatusHandler->updateCrawlerStatus(null, null, null, PHPCrawlerBenchmark::getmicrotime());
     }
   }
-  
+
   /**
    * Setups the CrawlerStatusHandler dependent on the crawler-settings
    */
@@ -856,44 +856,44 @@ class PHPCrawler
     {
       $this->CrawlerStatusHandler->write_status_to_file = true;
     }
-    
+
     if ($this->request_delay_time != null && $this->multiprocess_mode != PHPCrawlerMultiProcessModes::MPMODE_NONE)
     {
       $this->CrawlerStatusHandler->write_status_to_file = true;
     }
-    
+
     // Cases a crawlerstatus-update has to be locked
     if ($this->multiprocess_mode == PHPCrawlerMultiProcessModes::MPMODE_CHILDS_EXECUTES_USERCODE)
     {
       $this->CrawlerStatusHandler->lock_status_updates = true;
     }
-    
+
     if ($this->request_delay_time != null && $this->multiprocess_mode != PHPCrawlerMultiProcessModes::MPMODE_NONE)
     {
       $this->CrawlerStatusHandler->lock_status_updates = true;
     }
   }
-  
+
   /**
    * Creates the working-directory for this instance of the cralwer.
    */
   protected function createWorkingDirectory()
   {
     $this->working_directory = $this->working_base_directory."phpcrawl_tmp_".$this->crawler_uniqid.DIRECTORY_SEPARATOR;
-    
+
     // Check if writable
     if (!is_writeable($this->working_base_directory))
     {
       throw new Exception("Error creating working directory '".$this->working_directory."'");
     }
-    
+
     // Create dir
     if (!file_exists($this->working_directory))
     {
       mkdir($this->working_directory);
     }
   }
-  
+
   /**
    * Cleans up the crawler after it has finished.
    */
@@ -905,7 +905,7 @@ class PHPCrawler
 
     // Delete working-dir
     PHPCrawlerUtils::rmDir($this->working_directory);
-    
+
     // Remove semaphore (if multiprocess-mode)
     if ($this->multiprocess_mode != PHPCrawlerMultiProcessModes::MPMODE_NONE)
     {
@@ -913,7 +913,7 @@ class PHPCrawler
       sem_remove($sem_key);
     }
   }
-  
+
   /**
    * Retruns summarizing report-information about the crawling-process after it has finished.
    *
@@ -921,57 +921,57 @@ class PHPCrawler
    * @section 1 Basic settings
    */
   public function getProcessReport()
-  { 
+  {
     // Get current crawler-Status
     $CrawlerStatus = $this->crawlerStatus;
-    
+
     // Create report
     $Report = new PHPCrawlerProcessReport();
-    
+
     $Report->links_followed = $CrawlerStatus->links_followed;
     $Report->files_received = $CrawlerStatus->documents_received;
     $Report->bytes_received = $CrawlerStatus->bytes_received;
     $Report->process_runtime = PHPCrawlerBenchmark::getElapsedTime("crawling_process");
-    
+
     if ($Report->process_runtime > 0)
       $Report->data_throughput = $Report->bytes_received / $Report->process_runtime;
-    
+
     // Process abort-reason
     $Report->abort_reason = $CrawlerStatus->abort_reason;
-    
+
     if ($CrawlerStatus->abort_reason == PHPCrawlerAbortReasons::ABORTREASON_TRAFFICLIMIT_REACHED)
       $Report->traffic_limit_reached = true;
-    
+
     if ($CrawlerStatus->abort_reason == PHPCrawlerAbortReasons::ABORTREASON_FILELIMIT_REACHED)
       $Report->file_limit_reached = true;
-    
+
     if ($CrawlerStatus->abort_reason == PHPCrawlerAbortReasons::ABORTREASON_USERABORT)
       $Report->user_abort = true;
-    
+
     // Peak memory-usage
     if (function_exists("memory_get_peak_usage"))
       $Report->memory_peak_usage = memory_get_peak_usage(true);
-    
+
     // Benchmark: Average server connect time
     if ($CrawlerStatus->sum_server_connects > 0)
       $Report->avg_server_connect_time = $CrawlerStatus->sum_server_connect_time / $CrawlerStatus->sum_server_connects;
-      
+
     // Benchmark: Average server response time
     if ($CrawlerStatus->sum_server_responses > 0)
       $Report->avg_server_response_time = $CrawlerStatus->sum_server_response_time / $CrawlerStatus->sum_server_responses;
-    
+
     // Average data tranfer time
     if ($CrawlerStatus->sum_data_transfer_time > 0)
       $Report->avg_proc_data_transfer_rate = $CrawlerStatus->unbuffered_bytes_read / $CrawlerStatus->sum_data_transfer_time;
 
     return $Report;
   }
-  
+
   /**
    * Retruns an array with summarizing report-information after the crawling-process has finished
    *
    * For detailed information on the conatining array-keys see PHPCrawlerProcessReport-class.
-   * 
+   *
    * @deprecated Please use getProcessReport() instead.
    * @section 11 Deprecated
    */
@@ -979,7 +979,7 @@ class PHPCrawler
   {
     return $this->getProcessReport()->toArray();
   }
-  
+
   /**
    * Overridable method that will be called after the header of a document was received and BEFORE the content
    * will be received.
@@ -989,7 +989,7 @@ class PHPCrawler
    *
    * Example:
    * <code>
-   * class MyCrawler extends PHPCrawler 
+   * class MyCrawler extends PHPCrawler
    * {
    *   function handleHeaderInfo(PHPCrawlerResponseHeader $header)
    *   {
@@ -997,9 +997,9 @@ class PHPCrawler
    *     if ($header->content_type != "text/html")
    *     {
    *       return -1;
-   *     }   
+   *     }
    *   }
-   * 
+   *
    *   function handleDocumentInfo($PageInfo)
    *   {
    *     // ...
@@ -1015,7 +1015,7 @@ class PHPCrawler
   {
     return 1;
   }
-  
+
   /**
    * Overridable method that will be called by every used child-process just before it starts the crawling-procedure.
    *
@@ -1028,7 +1028,7 @@ class PHPCrawler
    *
    * Example:
    * <code>
-   * class MyCrawler extends PHPCrawler 
+   * class MyCrawler extends PHPCrawler
    * {
    *   protected $mysql_link;
    *
@@ -1038,8 +1038,8 @@ class PHPCrawler
    *     $this->mysql_link = mysql_connect("myhost", "myusername", "mypassword");
    *     mysql_select_db ("mydatabasename", $this->mysql_link);
    *   }
-   * 
-   *   function handleDocumentInfo($PageInfo) 
+   *
+   *   function handleDocumentInfo($PageInfo)
    *   {
    *     mysql_query("INSERT INTO urls SET url = '".$PageInfo->url."';", $this->mysql_link);
    *   }
@@ -1056,7 +1056,7 @@ class PHPCrawler
   public function initChildProcess()
   {
   }
-  
+
   /**
    * Override this method to get access to all information about a page or file the crawler found and received.
    *
@@ -1081,7 +1081,7 @@ class PHPCrawler
    *
    *     // Print the number of found links in this document
    *     echo "Links found: ".count($PageInfo->links_found_url_descriptors)."<br />";
-   *     
+   *
    *     // ..
    *   }
    * }
@@ -1094,7 +1094,7 @@ class PHPCrawler
    * @section 3 Overridable methods / User data-processing
    */
   public function handleDocumentInfo(PHPCrawlerDocumentInfo $PageInfo){}
-  
+
   /**
    * Sets the URL of the first page the crawler should crawl (root-page).
    *
@@ -1112,7 +1112,7 @@ class PHPCrawler
   public function setURL($url)
   {
     $url = trim($url);
-    
+
     if ($url != "" && is_string($url))
     {
       $this->starting_url = PHPCrawlerUtils::normalizeURL($url);
@@ -1120,7 +1120,7 @@ class PHPCrawler
     }
     else return false;
   }
-  
+
   /**
    * Sets the port to connect to for crawling the starting-url set in setUrl().
    *
@@ -1132,7 +1132,7 @@ class PHPCrawler
    * $crawler->setPort(443);
    * </code>
    * effects the same as
-   * 
+   *
    * <code>
    * $cralwer->setURL("http://www.foo.com:443");
    * </code>
@@ -1150,10 +1150,10 @@ class PHPCrawler
     $url_parts = PHPCrawlerUtils::splitURL($this->starting_url);
     $url_parts["port"] = $port;
     $this->starting_url = PHPCrawlerUtils::buildURLFromParts($url_parts, true);
-    
+
     return true;
   }
-  
+
   /**
    * Adds a regular expression togehter with a priority-level to the list of rules that decide what links should be prefered.
    *
@@ -1184,12 +1184,12 @@ class PHPCrawler
       $c = count($this->link_priority_array);
       $this->link_priority_array[$c]["match"] = trim($regex);
       $this->link_priority_array[$c]["level"] = trim($level);
-    
+
       return true;
     }
     else return false;
   }
-  
+
   /**
    * Defines whether the crawler should follow redirects sent with headers by a webserver or not.
    *
@@ -1202,13 +1202,13 @@ class PHPCrawler
   {
     return $this->PageRequest->setFindRedirectURLs($mode);
   }
-  
+
   /**
    * Defines whether the crawler should follow HTTP-redirects until first content was found, regardless of defined filter-rules and follow-modes.
    *
    * Sometimes, when requesting an URL, the first thing the webserver does is sending a redirect to
    * another location, and sometimes the server of this new location is sending a redirect again
-   * (and so on). 
+   * (and so on).
    * So at least its possible that you find the expected content on a totally different host
    * as expected.
    *
@@ -1224,7 +1224,7 @@ class PHPCrawler
   {
     $this->follow_redirects_till_content = $mode;
   }
-  
+
   /**
    * Sets the basic follow-mode of the crawler.
    *
@@ -1255,11 +1255,11 @@ class PHPCrawler
   {
     // Check mode
     if (!preg_match("/^[0-3]{1}$/", $follow_mode)) return false;
-    
+
     $this->UrlFilter->general_follow_mode = $follow_mode;
     return true;
   }
-  
+
   /**
    * Adds a rule to the list of rules that decides which pages or files - regarding their content-type - should be received
    *
@@ -1289,19 +1289,19 @@ class PHPCrawler
   {
     return $this->PageRequest->addReceiveContentType($regex);
   }
-  
+
   /**
    * Alias for addContentTypeReceiveRule().
    *
    * @section 11 Deprecated
    * @deprecated
-   * 
+   *
    */
   public function addReceiveContentType($regex)
   {
     return $this->addContentTypeReceiveRule($regex);
   }
-  
+
   /**
    * Adds a rule to the list of rules that decide which URLs found on a page should be followd explicitly.
    *
@@ -1327,7 +1327,7 @@ class PHPCrawler
   {
     return $this->UrlFilter->addURLFollowRule($regex);
   }
-  
+
   /**
    * Adds a rule to the list of rules that decide which URLs found on a page should be ignored by the crawler.
    *
@@ -1350,31 +1350,31 @@ class PHPCrawler
   {
     return $this->UrlFilter->addURLFilterRule($regex);
   }
-  
+
   /**
    * Alias for addURLFollowRule().
    *
    * @section 11 Deprecated
    * @deprecated
-   * 
+   *
    */
   public function addFollowMatch($regex)
   {
     return $this->addURLFollowRule($regex);
   }
-  
+
   /**
    * Alias for addURLFilterRule().
    *
    * @section 11 Deprecated
    * @deprecated
-   * 
+   *
    */
   public function addNonFollowMatch($regex)
   {
     return $this->addURLFilterRule($regex);
   }
-  
+
   /**
    * Adds a rule to the list of rules that decides what types of content should be streamed diretly to a temporary file.
    *
@@ -1398,7 +1398,7 @@ class PHPCrawler
    * // Tell the crawler to stream everything but "text/html"-documents to a tmp-file
    * $crawler->addStreamToFileContentType("#^((?!text/html).)*$#");
    * </code>
-   * 
+   *
    * @param string $regex The rule as a regular-expression
    * @return bool         TRUE if the rule was added to the list and the regex is valid.
    * @section 10 Other settings
@@ -1407,7 +1407,7 @@ class PHPCrawler
   {
     return $this->PageRequest->addStreamToFileContentType($regex);
   }
-  
+
   /**
    * Has no function anymore.
    *
@@ -1419,9 +1419,9 @@ class PHPCrawler
   public function setTmpFile($tmp_file)
   {
   }
-  
+
   /**
-   * Defines whether the crawler should parse and obey robots.txt-files. 
+   * Defines whether the crawler should parse and obey robots.txt-files.
    *
    * If this is set to TRUE, the crawler looks for a robots.txt-file for the root-URL of the crawling-process at the default location
    * and - if present - parses it and obeys all containig directives appliying to the
@@ -1444,28 +1444,28 @@ class PHPCrawler
   public function obeyRobotsTxt($mode, $robots_txt_uri = null)
   {
     if (!is_bool($mode)) return false;
-    
+
     $this->obey_robots_txt = $mode;
-    
+
     if ($mode == true)
       $this->robots_txt_uri = $robots_txt_uri;
     else
       $this->robots_txt_uri = null;
-    
+
     return true;
   }
-  
+
   /**
    * Alias for addStreamToFileContentType().
    *
    * @deprecated
    * @section 11 Deprecated
-   */ 
+   */
   public function addReceiveToTmpFileMatch($regex)
   {
     return $this->addStreamToFileContentType($regex);
   }
-  
+
   /**
    * Has no function anymore!
    *
@@ -1474,12 +1474,12 @@ class PHPCrawler
    *
    * @deprecated This method has no function anymore since v 0.8.
    * @section 11 Deprecated
-   */ 
+   */
   public function addReceiveToMemoryMatch($regex)
   {
     return true;
   }
-  
+
   /**
    * Sets a limit to the total number of requests the crawler should execute.
    *
@@ -1499,12 +1499,12 @@ class PHPCrawler
   public function setRequestLimit($limit, $only_count_received_documents = false)
   {
     if (!preg_match("/^[0-9]*$/", $limit)) return false;
-    
+
     $this->request_limit = $limit;
     $this->only_count_received_documents = $only_count_received_documents;
     return true;
   }
-  
+
   /**
    * Alias for setRequestLimit() method.
    *
@@ -1515,7 +1515,7 @@ class PHPCrawler
   {
     return $this->setRequestLimit($limit, $only_count_received_documents);
   }
-  
+
   /**
    * Sets the content-size-limit for content the crawler should receive from documents.
    *
@@ -1523,7 +1523,7 @@ class PHPCrawler
    * from this page or file.
    *
    * Please note that the crawler can only find links in the received portion of a document.
-   * 
+   *
    * The default-value is 0 (no limit).
    *
    * @param int $bytes The limit in bytes.
@@ -1534,7 +1534,7 @@ class PHPCrawler
   {
     return $this->PageRequest->setContentSizeLimit($bytes);
   }
-  
+
   /**
    * Sets a limit to the number of bytes the crawler should receive alltogether during crawling-process.
    *
@@ -1556,7 +1556,7 @@ class PHPCrawler
     }
     else return false;
   }
-  
+
   /**
    * Enables or disables cookie-handling.
    *
@@ -1572,11 +1572,11 @@ class PHPCrawler
   public function enableCookieHandling($mode)
   {
     if (!is_bool($mode)) return false;
-    
+
     $this->cookie_handling_enabled = $mode;
     return true;
   }
-  
+
   /**
    * Alias for enableCookieHandling()
    *
@@ -1587,7 +1587,7 @@ class PHPCrawler
   {
     return $this->enableCookieHandling($mode);
   }
-  
+
   /**
    * Enables or disables agressive link-searching.
    *
@@ -1603,13 +1603,13 @@ class PHPCrawler
    *
    * @param bool $mode
    * @return bool
-   * @section 6 Linkfinding settings 
+   * @section 6 Linkfinding settings
    */
   public function enableAggressiveLinkSearch($mode)
   {
     return $this->PageRequest->enableAggressiveLinkSearch($mode);
   }
-  
+
   /**
    * Alias for enableAggressiveLinkSearch()
    *
@@ -1620,7 +1620,7 @@ class PHPCrawler
   {
     return $this->enableAggressiveLinkSearch($mode);
   }
-  
+
   /**
    * Sets the list of html-tags the crawler should search for links in.
    *
@@ -1640,13 +1640,13 @@ class PHPCrawler
   {
     return $this->PageRequest->setLinkExtractionTags($tag_array);
   }
-  
+
   /**
    * Sets the list of html-tags from which links should be extracted from.
    *
    * This method was named wrong in previous versions of phpcrawl.
    * It does not ADD tags, it SETS the tags from which links should be extracted from.
-   * 
+   *
    * Example
    * <code>$crawler->addLinkExtractionTags("href", "src");</code>
    *
@@ -1658,7 +1658,7 @@ class PHPCrawler
     $tags = func_get_args();
     return $this->setLinkExtractionTags($tags);
   }
-  
+
   /**
    * Adds a basic-authentication (username and password) to the list of basic authentications that will be send with requests.
    *
@@ -1681,7 +1681,7 @@ class PHPCrawler
   {
     return $this->UserSendDataCache->addBasicAuthentication($url_regex, $username, $password);
   }
-  
+
   /**
    * Sets the "User-Agent" identification-string that will be send with HTTP-requests.
    *
@@ -1693,7 +1693,7 @@ class PHPCrawler
     $this->PageRequest->userAgentString = $user_agent;
     return true;
   }
-  
+
   /**
    * Has no function anymore.
    *
@@ -1705,7 +1705,7 @@ class PHPCrawler
   public function disableExtendedLinkInfo($mode)
   {
   }
-  
+
   /**
    * Sets the working-directory the crawler should use for storing temporary data.
    *
@@ -1734,14 +1734,14 @@ class PHPCrawler
    */
   public function setWorkingDirectory($directory)
   {
-    if (is_writeable($this->working_base_directory))
+    if (is_writeable($directory))
     {
       $this->working_base_directory = $directory;
       return true;
     }
     else return false;
   }
-  
+
   /**
    * Assigns a proxy-server the crawler should use for all HTTP-Requests.
    *
@@ -1756,7 +1756,7 @@ class PHPCrawler
   {
     $this->PageRequest->setProxy($proxy_host, $proxy_port, $proxy_username, $proxy_password);
   }
-  
+
   /**
    * Sets the timeout in seconds for connection tries to hosting webservers.
    *
@@ -1780,7 +1780,7 @@ class PHPCrawler
       return false;
     }
   }
-  
+
   /**
    * Sets the timeout in seconds for waiting for data on an established server-connection.
    *
@@ -1804,7 +1804,7 @@ class PHPCrawler
       return false;
     }
   }
-  
+
   /**
    * Adds a rule to the list of rules that decide in what kind of documents the crawler
    * should search for links in (regarding their content-type)
@@ -1832,7 +1832,7 @@ class PHPCrawler
   {
     return $this->PageRequest->addLinkSearchContentType($regex);
   }
-  
+
   /**
    * Defines what type of cache will be internally used for caching URLs.
    *
@@ -1873,7 +1873,7 @@ class PHPCrawler
     }
     else return false;
   }
-  
+
   /**
    * Decides whether the crawler should obey "nofollow"-tags
    *
@@ -1882,7 +1882,7 @@ class PHPCrawler
    * <meta name="robots" content="nofollow">.
    *
    * By default, the crawler will NOT obey nofollow-tags.
-   * 
+   *
    * @param bool $mode If set to TRUE, the crawler will obey "nofollow"-tags
    * @section 2 Filter-settings
    */
@@ -1890,7 +1890,7 @@ class PHPCrawler
   {
     $this->UrlFilter->obey_nofollow_tags = $mode;
   }
-  
+
   /**
    * Adds post-data together with an URL-rule to the list of post-data to send with requests.
    *
@@ -1901,7 +1901,7 @@ class PHPCrawler
    * </code>
    * This example sends the post-values "username=me", "password=my_password" and "action=do_login" to the URL
    * http://www.foo.com/login.php
-   * 
+   *
    * @param string $url_regex       Regular expression defining the URL(s) the post-data should be send to.
    * @param array  $post_data_array Post-data-array, the array-keys are the post-data-keys, the array-values the post-values.
    *                                (like array("post_key1" => "post_value1", "post_key2" => "post_value2")
@@ -1913,7 +1913,7 @@ class PHPCrawler
   {
     return $this->UserSendDataCache->addPostData($url_regex, $post_data_array);
   }
-  
+
   /**
    * Returns the unique ID of the instance of the crawler
    *
@@ -1924,14 +1924,14 @@ class PHPCrawler
   {
     return $this->crawler_uniqid;
   }
-  
+
   /**
    * Resumes the crawling-process with the given crawler-ID
    *
    * If a crawling-process was aborted (for whatever reasons), it is possible
    * to resume it by calling the resume()-method before calling the go() or goMultiProcessed() method
    * and passing the crawler-ID of the aborted process to it (as returned by {@link getCrawlerId()}).
-   * 
+   *
    * In order to be able to resume a process, it is necessary that it was initially
    * started with resumption enabled (by calling the {@link enableResumption()} method).
    *
@@ -1962,7 +1962,7 @@ class PHPCrawler
    * }
    *
    * // ...
-   * 
+   *
    * // Start your crawling process
    * $crawler->goMultiProcessed(5);
    *
@@ -1978,21 +1978,21 @@ class PHPCrawler
   {
     if ($this->resumtion_enabled == false)
       throw new Exception("Resumption was not enalbled, call enableResumption() before calling the resume()-method!");
-    
+
     // Adobt crawler-id
     $this->crawler_uniqid = $crawler_id;
-    
+
     if (!file_exists($this->working_base_directory."phpcrawl_tmp_".$this->crawler_uniqid.DIRECTORY_SEPARATOR))
     {
       throw new Exception("Couldn't find any previous aborted crawling-process with crawler-id '".$this->crawler_uniqid."'");
     }
-    
+
     $this->createWorkingDirectory();
-    
+
     // Unlinks pids file in working-dir (because all PIDs will change in new process)
     if (file_exists($this->working_directory."pids")) unlink($this->working_directory."pids");
   }
-  
+
   /**
    * Prepares the crawler for process-resumption.
    *
@@ -2008,7 +2008,7 @@ class PHPCrawler
     $this->resumtion_enabled = true;
     $this->setUrlCacheType(PHPCrawlerUrlCacheTypes::URLCACHE_SQLITE);
   }
-  
+
   /**
    * Sets the HTTP protocol version the crawler should use for requests
    *
@@ -2030,7 +2030,7 @@ class PHPCrawler
   {
     return $this->PageRequest->setHTTPProtocolVersion($http_protocol_version);
   }
-  
+
   /**
    * Enables support/requests for gzip-encoded content.
    *
@@ -2079,10 +2079,10 @@ class PHPCrawler
       $this->request_delay_time = $time;
       return true;
     }
-    
+
     return false;
   }
-  
+
   /**
    * Defines the sections of HTML-documents that will get ignroed by the link-finding algorithm.
    *
@@ -2103,19 +2103,19 @@ class PHPCrawler
    * </code>
    * Example 2:
    * <code>
-   * // Let the crawler ignore all special sections except HTML-comments 
+   * // Let the crawler ignore all special sections except HTML-comments
    * $crawler->excludeLinkSearchDocumentSections(PHPCrawlerLinkSearchDocumentSections::ALL_SPECIAL_SECTIONS ^
    *                                             PHPCrawlerLinkSearchDocumentSections::HTML_COMMENT_SECTIONS);
    * </code>
    *
    * @param int $document_sections Bitwise combination of the {@link PHPCrawlerLinkSearchDocumentSections}-constants.
-   * @section 6 Linkfinding settings 
+   * @section 6 Linkfinding settings
    */
   public function excludeLinkSearchDocumentSections($document_sections)
   {
     return $this->PageRequest->excludeLinkSearchDocumentSections($document_sections);
   }
-  
+
   /**
    * Sets the maximum crawling depth
    *
@@ -2134,7 +2134,7 @@ class PHPCrawler
       $this->UrlFilter->max_crawling_depth = $depth;
       return true;
     }
-    
+
     return false;
   }
 }
