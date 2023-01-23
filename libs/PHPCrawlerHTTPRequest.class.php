@@ -426,7 +426,7 @@ class PHPCrawlerHTTPRequest
     $stream_to_file = $this->decideStreamToFile($response_header);
 
     // Read content
-    $response_content = $this->readResponseContent($PageInfo->error_code, $PageInfo->error_string, $PageInfo->received_completely,$stream_to_file);
+    $response_content = $this->readResponseContent($PageInfo->error_code, $PageInfo->error_string, $PageInfo->received_completely, $stream_to_file);
 
     // If error occured
     if ($PageInfo->error_code != null) {
@@ -690,7 +690,7 @@ class PHPCrawlerHTTPRequest
    *
    * @return string  The response-content/source. May be emtpy if an error ocdured or data was streamed to the tmp-file.
    */
-  protected function readResponseContent(&$error_code, &$error_string, &$document_received_completely,$stream_to_file = false)
+  protected function readResponseContent(&$error_code, &$error_string, &$document_received_completely, $stream_to_file = false)
   {
     $this->content_bytes_received = 0;
 
@@ -973,11 +973,13 @@ class PHPCrawlerHTTPRequest
     $post_content = "";
 
     // Post-Data
-    if(isset($this->post_data))@reset($this->post_data);
-    foreach ($this->post_data as $key => $value) {
-      $post_content .= "-----------------------------10786153015124\r\n";
-      $post_content .= "Content-Disposition: form-data; name=\"" . $key . "\"\r\n\r\n";
-      $post_content .= $value . "\r\n";
+    if (isset($this->post_data)) {
+      @reset($this->post_data);
+      foreach ($this->post_data as $key => $value) {
+        $post_content .= "-----------------------------10786153015124\r\n";
+        $post_content .= "Content-Disposition: form-data; name=\"" . $key . "\"\r\n\r\n";
+        $post_content .= $value . "\r\n";
+      }
     }
 
     $post_content .= "-----------------------------10786153015124\r\n";
@@ -995,8 +997,8 @@ class PHPCrawlerHTTPRequest
   {
     $cookie_string = "";
 
-    if(isset($this->cookie_array))@reset($this->cookie_array);
-    foreach($this->cookie_array as $key=>$value) {
+    if (isset($this->cookie_array)) @reset($this->cookie_array);
+    foreach ($this->cookie_array as $key => $value) {
       $cookie_string .= "; " . $key . "=" . $value . "";
     }
 
