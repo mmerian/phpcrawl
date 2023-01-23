@@ -320,7 +320,8 @@ class PhpcrawlSetup extends PHPCrawler
       if ($key=="referer_url")
       {
         if ($DocInfo->referer_url == "") $str = "-";
-        else $str = &$page_data["referer_url"];
+        else $str = htmlentities($DocInfo->referer_url);
+        
         echo "<tr><td><nobr>Refering URL</nobr>:</td><td >".$str."</td></tr>";
       }
 

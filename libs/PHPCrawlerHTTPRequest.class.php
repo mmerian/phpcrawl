@@ -31,7 +31,7 @@ class PHPCrawlerHTTPRequest
   /**
    * Limit for content-size to receive
    *
-   * @var int The kimit n bytes
+   * @var int The limit n bytes
    */
   protected $content_size_limit = 0;
 
@@ -341,7 +341,7 @@ class PHPCrawlerHTTPRequest
   /**
    * Sends the HTTP-request and receives the page/file.
    *
-   * @return A PHPCrawlerDocumentInfo-object containing all information about the received page/file
+   * @return object PHPCrawlerDocumentInfo-object containing all information about the received page/file
    */
   public function sendRequest()
   {
@@ -1214,7 +1214,7 @@ class PHPCrawlerHTTPRequest
       $this->source_overlap_size = $source_overlap_size;
 
     if ($this->content_buffer_size < $this->chunk_buffer_size || $this->chunk_buffer_size < $this->socket_read_buffer_size) {
-      throw new Exception("Implausible buffer-size-settings assigned to " . getClass($this) . ".");
+      throw new Exception("Implausible buffer-size-settings assigned to " . $Docinfo($this) . ".");
     }
   }
 }

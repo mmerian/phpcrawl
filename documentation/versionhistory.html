@@ -24,10 +24,14 @@
         <div id="content">
         <h3>Version-History / Changelog</h3><br />
         
-        <b>Version 0.83</b><br>
-        2015/01/27<br>
+        <b>Version 0.84</b><br>
+        2023/01/22<br>
         
         <ul class="changelog">
+
+
+            <li>Replaced the deprecated function() method to accomodate PHP 7 and 8</li>
+            <li>Removed the deprecated handlePageData method in favor of handleDocumentInfo</li>
         
         <li>Fixed bug #74: The crawler now doesn't treat hostnames case sensitive anymore and won't follow URLs differing just in hostname
             letter case more than one time (like "www.foo.net/page" and "www.FOO.net/page")</li>

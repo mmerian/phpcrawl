@@ -4,12 +4,12 @@
  *
  * @package phpcrawl
  * @author Uwe Hunfeld (phpcrawl@cuab.de)
- * @version 0.83
+ * @version 0.84
  * @License GPL2
  */
 class PHPCrawler
 {
-  public $class_version = "0.83rc1";
+  public $class_version = "0.84rc1";
   
   /**
    * The PHPCrawlerHTTPRequest-Object
@@ -157,6 +157,8 @@ class PHPCrawler
    * @var int
    */
   protected $child_process_number = null;
+
+  protected $child_pids = null;
   
   protected $child_process_count = 1;
   
@@ -166,6 +168,13 @@ class PHPCrawler
    * @var PHPCrawlerProcessHandler
    */
   protected $ProcessHandler = null;
+
+  /**
+   * crawlerStatus-object
+   * 
+   * @var crawlerStatus
+   */
+  protected $crawlerStatus = null;
   
   /**
    * PHPCrawlerStatusHandler-object
@@ -208,7 +217,6 @@ class PHPCrawler
    * Flag indicating whether the URL-cahce was purged at the beginning of a crawling-process
    */
   protected $urlcache_purged = false;
-  
   /**
    * Initiates a new crawler.
    */
@@ -349,7 +357,7 @@ class PHPCrawler
   /**
    * Starts the crawling process in single-process-mode.
    *
-   * Be sure you did override the {@link handleDocumentInfo()}- or {@link handlePageData()}-method before calling the go()-method
+   * Be sure you did override the {@link handleDocumentInfo()}-method before calling the go()-method
    * to process the documents the crawler finds.
    *
    * @section 1 Basic settings
@@ -541,17 +549,7 @@ class PHPCrawler
       // Update crawler-status
       $this->CrawlerStatusHandler->updateCrawlerStatus($DocInfo);
       
-      // Call the "abstract" method handlePageData
-      $user_abort = false;
-      
-      // If defined by user -> call old handlePageData-method, otherwise don't (because of high memory-usage)
-      if (method_exists($this, "handlePageData"))
-      {
-        $page_info = $DocInfo->toArray();
-        $user_return_value = $this->handlePageData($page_info);
-        if ($user_return_value < 0) $user_abort = true;
-      }
-      
+      $user_abort = false;      
       // Call the "abstract" method handleDocumentInfo
       $user_return_value = $this->handleDocumentInfo($DocInfo);
       if ($user_return_value < 0) $user_abort = true;
@@ -689,14 +687,6 @@ class PHPCrawler
       $this->CrawlerStatusHandler->updateCrawlerStatus($PageInfo);
       
       $user_abort = false;
-      
-      // If defined by user -> call old handlePageData-method, otherwise don't (because of high memory-usage)
-      if (method_exists($this, "handlePageData"))
-      {
-        $page_info = $PageInfo->toArray();
-        $user_return_value = $this->handlePageData($page_info);
-        if ($user_return_value < 0) $user_abort = true;
-      }
       
       // Call the "abstract" method handleDocumentInfo
       $user_return_value = $this->handleDocumentInfo($PageInfo);
