@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class for caching/storing URLs/links in memory.
  *
@@ -9,7 +10,7 @@ class PHPCrawlerMemoryURLCache extends PHPCrawlerURLCacheBase
 {
   protected $urls  = [];
   protected $url_map  = [];
-  
+
   /**
    * Returns the next URL from the cache that should be crawled.
    *
@@ -18,24 +19,25 @@ class PHPCrawlerMemoryURLCache extends PHPCrawlerURLCacheBase
   public function getNextUrl()
   {
     //PHPCrawlerBenchmark::start("getting_cached_url");
-    
+
     $max_pri_lvl = $this->getMaxPriorityLevel();
-    
-    @reset($this->urls[$max_pri_lvl]);
-    foreach($this->urls[$max_pri_lvl] as $key=>$value) {
-      $UrlDescriptor_next = $this->urls[$max_pri_lvl][$key];
-      unset($this->urls[$max_pri_lvl][$key]);
-      break;
+    if (isset($this->urls[$max_pri_lvl])) {
+      @reset($this->urls[$max_pri_lvl]);
+      foreach ($this->urls[$max_pri_lvl] as $key => $value) {
+        $UrlDescriptor_next = $this->urls[$max_pri_lvl][$key];
+        unset($this->urls[$max_pri_lvl][$key]);
+        break;
+      }
     }
-    
+
     // If there's no URL in the priority-level-array left -> unset
     if (count($this->urls[$max_pri_lvl]) == 0) unset($this->urls[$max_pri_lvl]);
-    
+
     //PHPCrawlerBenchmark::stop("getting_cached_url");
-     
+
     return $UrlDescriptor_next;
   }
-  
+
   /**
    * Returns all URLs currently cached in the URL-cache.
    *
@@ -44,20 +46,20 @@ class PHPCrawlerMemoryURLCache extends PHPCrawlerURLCacheBase
   public function getAllURLs()
   {
     $URLs  = [];
-    
-    @reset($this->urls);
-    foreach($this->urls as $pri_lvl => $value)
-    {
-      $cnt = count($this->urls[$pri_lvl]);
-      for ($x=0; $x<$cnt; $x++)
-      {
-        $URLs[] = &$this->urls[$pri_lvl][$x];
+
+    if (isset($this->urls)) {
+      @reset($this->urls);
+      foreach ($this->urls as $pri_lvl => $value) {
+        $cnt = count($this->urls[$pri_lvl]);
+        for ($x = 0; $x < $cnt; $x++) {
+          $URLs[] = &$this->urls[$pri_lvl][$x];
+        }
       }
     }
-    
+
     return $URLs;
   }
-  
+
   /**
    * Removes all URLs and all priority-rules from the URL-cache.
    */
@@ -67,33 +69,33 @@ class PHPCrawlerMemoryURLCache extends PHPCrawlerURLCacheBase
     $this->url_map  = [];
     $this->url_priorities  = [];
   }
-  
+
   /**
    * Adds an URL to the url-cache
    *
    * @param PHPCrawlerURLDescriptor $UrlDescriptor      
    */
   public function addURL(PHPCrawlerURLDescriptor $UrlDescriptor)
-  { 
+  {
     if ($UrlDescriptor == null) return;
-    
+
     // Hash of the URL
     $map_key = $this->getDistinctURLHash($UrlDescriptor);
-    
+
     // If URL already in cache -> abort
-    if($map_key != null && isset($this->url_map[$map_key])) return;
-    
+    if ($map_key != null && isset($this->url_map[$map_key])) return;
+
     // Retrieve priority-level
     $priority_level = $this->getUrlPriority($UrlDescriptor->url_rebuild);
-    
+
     // Add URL to URL-Array
     $this->urls[$priority_level][] = $UrlDescriptor;
-    
+
     // Add URL to URL-Map
     if ($this->url_distinct_property != self::URLHASH_NONE)
       $this->url_map[$map_key] = true;
   }
-  
+
   /**
    * Adds an bunch of URLs to the url-cache
    *
@@ -102,19 +104,17 @@ class PHPCrawlerMemoryURLCache extends PHPCrawlerURLCacheBase
   public function addURLs($urls)
   {
     //PHPCrawlerBenchmark::start("caching_urls");
-    
+
     $cnt = count($urls);
-    for ($x=0; $x<$cnt; $x++)
-    {
-      if ($urls[$x] != null)
-      {
+    for ($x = 0; $x < $cnt; $x++) {
+      if ($urls[$x] != null) {
         $this->addURL($urls[$x]);
       }
     }
-    
+
     //PHPCrawlerBenchmark::stop("caching_urls");
   }
-  
+
   /**
    * Checks whether there are URLs left in the cache or not.
    *
@@ -125,7 +125,7 @@ class PHPCrawlerMemoryURLCache extends PHPCrawlerURLCacheBase
     if (count($this->urls) == 0) return false;
     else return true;
   }
-  
+
   /**
    * Cleans up the cache after is it not needed anymore.
    */
@@ -134,21 +134,21 @@ class PHPCrawlerMemoryURLCache extends PHPCrawlerURLCacheBase
     $this->urls  = [];
     $this->url_map  = [];
   }
-  
+
   /**
    * Has no function in this class.
    */
   public function purgeCache()
   {
   }
-  
+
   /**
    * Has no function in this memory-cache.
    */
   public function markUrlAsFollowed(PHPCrawlerURLDescriptor $UrlDescriptor)
   {
   }
-  
+
   /**
    * Returns the highest priority-level an URL exists in cache for.
    *
@@ -161,4 +161,3 @@ class PHPCrawlerMemoryURLCache extends PHPCrawlerURLCacheBase
     return $defined_priority_levels[0];
   }
 }
-?>

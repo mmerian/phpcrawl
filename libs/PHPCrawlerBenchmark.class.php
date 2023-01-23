@@ -103,19 +103,23 @@ class PHPCrawlerBenchmark
     }
 
     // Else reset all benchmarks BUT the retain_benachmarks
-    @reset(self::$benchmark_results);
-    foreach (self::$benchmark_results as $identifier=>$value) {
-      if (!in_array($identifier, $retain_benchmarks)) {
-        self::$benchmark_results[$identifier] = 0;
+    if (isset(self::$benchmark_results)) {
+      @reset(self::$benchmark_results);
+      foreach (self::$benchmark_results as $identifier => $value) {
+        if (!in_array($identifier, $retain_benchmarks)) {
+          self::$benchmark_results[$identifier] = 0;
+        }
       }
     }
   }
 
   public static function printAllBenchmarks($linebreak = "<br />")
   {
-    @reset(self::$benchmark_results);
-    foreach(self::$benchmark_results as $identifier=>$elapsed_time) {
-      if (!isset(self::$temporary_benchmarks[$identifier])) echo $identifier . ": " . $elapsed_time . " sec" . $linebreak;
+    if (isset(self::$benchmark_results)) {
+      @reset(self::$benchmark_results);
+      foreach (self::$benchmark_results as $identifier => $elapsed_time) {
+        if (!isset(self::$temporary_benchmarks[$identifier])) echo $identifier . ": " . $elapsed_time . " sec" . $linebreak;
+      }
     }
   }
 
@@ -127,10 +131,11 @@ class PHPCrawlerBenchmark
   public static function getAllBenchmarks()
   {
     $benchmarks  = [];
-
-    @reset(self::$benchmark_results);
-    foreach (self::$benchmark_results as $identifier => $elapsed_time) {
-      if (!isset(self::$temporary_benchmarks[$identifier])) $benchmarks[$identifier] = $elapsed_time;
+    if (isset(self::$benchmark_results)) {
+      @reset(self::$benchmark_results);
+      foreach (self::$benchmark_results as $identifier => $elapsed_time) {
+        if (!isset(self::$temporary_benchmarks[$identifier])) $benchmarks[$identifier] = $elapsed_time;
+      }
     }
 
     return $benchmarks;
