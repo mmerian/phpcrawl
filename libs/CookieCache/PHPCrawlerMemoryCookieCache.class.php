@@ -54,7 +54,7 @@ class PHPCrawlerMemoryCookieCache extends PHPCrawlerCookieCacheBase
     $return_cookies  = [];
     
     // Iterate over all cookies of this domain
-    @reset($this->cookies[$target_domain]);
+    if(isset($this->cookies[$target_domain]))@reset($this->cookies[$target_domain]);
     foreach($this->cookies[$target_domain] as $hash=>$value)
     {
       $Cookie = $this->cookies[$target_domain][$hash];
