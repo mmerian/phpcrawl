@@ -16,15 +16,15 @@
 
 class PhpcrawlSetup extends PHPCrawler
 {
-  var $setup_array_raw = array(); // Form: $array[method]=argument -> $this->method(argument)
+  var $setup_array_raw  = []; // Form: $array[method]=argument -> $this->method(argument)
                                   // or    $array[method][0]=argument -> $this->method(argument)
                                   // or    $array[method][1][0]=arg1
                                   //       $array[method][1][1]=arg2  -> $this->method(arg1, arg2)
 
-  var $setup_array = array(); // Converted setup-array, adds some information and
+  var $setup_array  = []; // Converted setup-array, adds some information and
                               // converts arguments if nessesary (see convertSetupArray())
 
-  var $output_array = array(); // Array specifying the output that should be done
+  var $output_array  = []; // Array specifying the output that should be done
 
   var $force_output_flushing = false; // Just a flag for the ugly "flush()"-workaround
                                       // on servers with output_buffering set to ON.
@@ -44,7 +44,7 @@ class PhpcrawlSetup extends PHPCrawler
   // add the "argument_type" (just for the error-output)
   function convertSetupArray ()
   {
-    while (list($key)=@each($this->setup_array_raw))
+    foreach($this->setup_array_raw as $key=>$value) 
     {
       if ($key=="setURL") {
         $this->setup_array[$key]["arg_type"] = "string";
@@ -190,21 +190,19 @@ class PhpcrawlSetup extends PHPCrawler
       $setup_error = "No output specified, please choose some output.";
     }
     else {
-
-      while(list($key)=@each($this->setup_array))
+      foreach($this->setup_array as $key=>$value)
       {
         if (is_array($this->setup_array[$key]["arg_value"])) {
-          $setup_error = $this->setObjectMethods($key, $this->setup_array[$key]["arg_value"], $this->setup_array[$key]["arg_type"]);
-        }
-        else {
-          $setup_error = $this->setObjectMethod($key, $this->setup_array[$key]["arg_value"], $this->setup_array[$key]["arg_type"]);
-        }
-
-        if ($setup_error) {
-          break;
-        }
-
+        $setup_error = $this->setObjectMethods($key, $this->setup_array[$key]["arg_value"], $this->setup_array[$key]["arg_type"]);
       }
+      else {
+        $setup_error = $this->setObjectMethod($key, $this->setup_array[$key]["arg_value"], $this->setup_array[$key]["arg_type"]);
+      }
+
+      if ($setup_error) {
+        break;
+      }
+    }
     }
 
     return $setup_error;
@@ -225,9 +223,8 @@ class PhpcrawlSetup extends PHPCrawler
         $args = 0;
 
         // Count arguments given
-        while (list($key)=@each($arguments[$x])) {
-          if (isset($arguments[$x][$key]) && $arguments[$x][$key]!="") $args++;
-        }
+        foreach($arguments[$x] as $key=>$value)
+        {if (isset($arguments[$x][$key]) && $arguments[$x][$key]!="") $args++;}
 
         // 3 arguments
         if ($args == 3) {
@@ -274,7 +271,7 @@ class PhpcrawlSetup extends PHPCrawler
 
     // Loop over the output-array and print info if wanted
     @reset($this->output_array);
-    while (list($key)=@each($this->output_array))
+    foreach($this->output_array as $key=>$value)
     {
       if ($key == "requested_url")
       {
@@ -420,6 +417,7 @@ class PhpcrawlSetup extends PHPCrawler
         echo "<tr><td valign=top>Memory-content-size:</td><td >".strlen($DocInfo->source)." bytes</td></tr>";
       }
     }
+    
 
     // Output error if theres one
     if ($DocInfo->error_occured)
@@ -444,4 +442,3 @@ class PhpcrawlSetup extends PHPCrawler
     flush();
   }
 }
-?>

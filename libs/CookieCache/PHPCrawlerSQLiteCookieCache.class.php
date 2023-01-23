@@ -78,7 +78,7 @@ class PHPCrawlerSQLiteCookieCache extends PHPCrawlerCookieCacheBase
     
     $url_parts = PHPCrawlerUtils::splitURL($target_url);
     
-    $return_cookies = array();
+    $return_cookies  = [];
 
     $Result = $this->PDO->query("SELECT * FROM cookies WHERE source_domain = '".$url_parts["domain"]."';");
     $rows = $Result->fetchAll(PDO::FETCH_ASSOC);

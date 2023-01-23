@@ -54,14 +54,14 @@ class PHPCrawlerLinkFinder
    */
   protected $baseUrlParts;
   
-  protected $found_links_map = array();
+  protected $found_links_map  = [];
   
   /**
    * Meta-attributes found in the html-source.
    *
    * @var array
    */
-  protected $meta_attributes = array();
+  protected $meta_attributes  = [];
   
   /**
    * Sections of HTML-documents ignorded by the linkfinder.
@@ -112,7 +112,7 @@ class PHPCrawlerLinkFinder
   {
     $this->LinkCache->clear();
     $this->top_lines_processed = false;
-    $this->meta_attributes = array();
+    $this->meta_attributes  = [];
   }
   
   /**
@@ -204,7 +204,7 @@ class PHPCrawlerLinkFinder
     
     // Now, if agressive_mode is set to true, we look for some
     // other things
-    $pregs = array();
+    $pregs  = [];
     if ($this->aggressive_search == true)
     {
       // Links like "...:url("animage.gif")..."
@@ -233,7 +233,7 @@ class PHPCrawlerLinkFinder
       }
     }
     
-    $this->found_links_map = array();
+    $this->found_links_map  = [];
     
     PHPCrawlerBenchmark::stop("searching_for_links_in_page");
   }

@@ -206,7 +206,7 @@ class PHPCrawlerDocumentInfo
    * @var array Numeric array containing all send cookies as {@link PHPCrawlerCookieDescriptor}-objects.
    * @section 2 Content-related information
    */
-  public $cookies = array();
+  public $cookies  = [];
   
   /**
    * An numeric array containing information about all links that were found in the source of the page.
@@ -224,7 +224,7 @@ class PHPCrawlerDocumentInfo
    * @var array
    * @section 3 Information about found links
    */
-  public $links_found = array();
+  public $links_found  = [];
   
   /**
    * An numeric array containing a PHPCrawlerURLDescriptor-object for every link that was found in the page.
@@ -237,7 +237,7 @@ class PHPCrawlerDocumentInfo
    * @var array Numneric array containing {@link PHPCrawlerURLDescriptor}-objects
    * @section 3 Information about found links
    */
-  public $links_found_url_descriptors = array();
+  public $links_found_url_descriptors  = [];
   
   /**
    * The complete URL of the page that contained the link to this document.
@@ -370,7 +370,7 @@ class PHPCrawlerDocumentInfo
    * @section 10 Benchmarks
    * @internal
    */
-  public $benchmarks = array();
+  public $benchmarks  = [];
   
   /**
    * All meta-tag atteributes found in the source of the document.
@@ -381,7 +381,7 @@ class PHPCrawlerDocumentInfo
    * @section 2 Content-related information
    *
    */
-  public $meta_attributes = array();
+  public $meta_attributes  = [];
   
   /**
    * Workaround-method, copies and converts the array $links_found_url_descriptors to $links_found.

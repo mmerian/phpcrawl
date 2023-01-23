@@ -72,5 +72,4 @@ echo "Summary:".$lb;
 echo "Links followed: ".$report->links_followed.$lb;
 echo "Documents received: ".$report->files_received.$lb;
 echo "Bytes received: ".$report->bytes_received." bytes".$lb;
-echo "Process runtime: ".$report->process_runtime." sec".$lb; 
-?>
+echo "Process runtime: ".$report->process_runtime." sec".$lb;

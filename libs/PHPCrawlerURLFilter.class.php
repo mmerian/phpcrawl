@@ -19,21 +19,21 @@ class PHPCrawlerURLFilter
    *
    * @var array The URL-parts as returned by PHPCrawlerUtils::splitURL()
    */
-  protected $starting_url_parts = array();
+  protected $starting_url_parts  = [];
   
   /**
    * Array containing regex-rules for URLs that should be followed.
    *
    * @var array
    */
-  protected $url_follow_rules = array();
+  protected $url_follow_rules  = [];
   
   /**
    * Array containing regex-rules for URLs that should NOT be followed.
    *
    * @var array
    */
-  protected $url_filter_rules = array();
+  protected $url_filter_rules  = [];
   
   /**
    * Defines whether nofollow-tags should get obeyed.
@@ -92,7 +92,7 @@ class PHPCrawlerURLFilter
     
     $this->CurrentDocumentInfo = $DocumentInfo;
     
-    $filtered_urls = array();
+    $filtered_urls  = [];
     
     $cnt = count($DocumentInfo->links_found_url_descriptors);
     for ($x=0; $x<$cnt; $x++)

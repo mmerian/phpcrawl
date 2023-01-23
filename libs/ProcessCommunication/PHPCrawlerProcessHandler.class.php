@@ -49,7 +49,7 @@ class PHPCrawlerProcessHandler
    */
   public function getChildPIDs($process_count = null)
   { 
-    $child_pids = array();
+    $child_pids  = [];
     $try = true;
     
     while ($try == true)

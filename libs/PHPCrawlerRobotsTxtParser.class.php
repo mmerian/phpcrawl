@@ -37,7 +37,7 @@ class PHPCrawlerRobotsTxtParser
     // Get robots.txt-content
     $robots_txt_content = PHPCrawlerUtils::getURIContent($robots_txt_uri, $user_agent_string);
 
-    $non_follow_reg_exps = array();
+    $non_follow_reg_exps  = [];
     
     // If content was found
     if ($robots_txt_content != null)
@@ -65,7 +65,7 @@ class PHPCrawlerRobotsTxtParser
     // Split the content into its lines
     $robotstxt_lines = explode("\n", $robots_txt_content);
     
-    $user_agent_lines = array();
+    $user_agent_lines  = [];
     $current_user_agent = null;
     
     // Loop over the lines and check if any user-agent-sections match with our agent
@@ -109,7 +109,7 @@ class PHPCrawlerRobotsTxtParser
   protected function buildRegExpressions($applying_lines, $base_url)
   { 
     // First, get all "Disallow:"-pathes
-    $disallow_pathes = array();
+    $disallow_pathes  = [];
     
     $cnt = count($applying_lines);
     for ($x=0; $x<$cnt; $x++)
@@ -135,7 +135,7 @@ class PHPCrawlerRobotsTxtParser
     
     $normalized_base_url = PHPCrawlerUtils::normalizeURL($base_url);
     
-    $non_follow_expressions = array();
+    $non_follow_expressions  = [];
     
     $cnt = count($disallow_pathes);
     for ($x=0; $x<$cnt; $x++)

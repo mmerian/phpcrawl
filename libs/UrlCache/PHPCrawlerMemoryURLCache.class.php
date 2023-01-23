@@ -7,8 +7,8 @@
  */
 class PHPCrawlerMemoryURLCache extends PHPCrawlerURLCacheBase
 {
-  protected $urls = array();
-  protected $url_map = array();
+  protected $urls  = [];
+  protected $url_map  = [];
   
   /**
    * Returns the next URL from the cache that should be crawled.
@@ -22,8 +22,7 @@ class PHPCrawlerMemoryURLCache extends PHPCrawlerURLCacheBase
     $max_pri_lvl = $this->getMaxPriorityLevel();
     
     @reset($this->urls[$max_pri_lvl]);
-    while (list($key) = @each($this->urls[$max_pri_lvl]))
-    {
+    foreach($this->urls[$max_pri_lvl] as $key=>$value) {
       $UrlDescriptor_next = $this->urls[$max_pri_lvl][$key];
       unset($this->urls[$max_pri_lvl][$key]);
       break;
@@ -44,10 +43,10 @@ class PHPCrawlerMemoryURLCache extends PHPCrawlerURLCacheBase
    */
   public function getAllURLs()
   {
-    $URLs = array();
+    $URLs  = [];
     
     @reset($this->urls);
-    while (list($pri_lvl) = @each($this->urls))
+    foreach($this->urls as $pri_lvl => $value)
     {
       $cnt = count($this->urls[$pri_lvl]);
       for ($x=0; $x<$cnt; $x++)
@@ -64,9 +63,9 @@ class PHPCrawlerMemoryURLCache extends PHPCrawlerURLCacheBase
    */
   public function clear()
   {
-    $this->urls = array();
-    $this->url_map = array();
-    $this->url_priorities = array();
+    $this->urls  = [];
+    $this->url_map  = [];
+    $this->url_priorities  = [];
   }
   
   /**
@@ -132,8 +131,8 @@ class PHPCrawlerMemoryURLCache extends PHPCrawlerURLCacheBase
    */
   public function cleanup()
   {
-    $this->urls = array();
-    $this->url_map = array();
+    $this->urls  = [];
+    $this->url_map  = [];
   }
   
   /**

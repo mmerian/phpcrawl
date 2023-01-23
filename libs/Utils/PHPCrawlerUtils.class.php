@@ -419,7 +419,7 @@ class PHPCrawlerUtils
    */
   public static function getCookiesFromHeader($header, $source_url)
   {
-    $cookies = array();
+    $cookies  = [];
     
     $hits = preg_match_all("#[\r\n]set-cookie:(.*)[\r\n]# Ui", $header, $matches);
     
@@ -499,7 +499,7 @@ class PHPCrawlerUtils
   }
   
   /**
-   * Sorts a twodimensiolnal array.
+   * Sorts a two dimensional array.
    */
   public static function sort2dArray(&$array, $sort_args)
   {
@@ -507,7 +507,7 @@ class PHPCrawlerUtils
     
     // Für jedes zu sortierende Feld ein eigenes Array bilden
     @reset($array);
-    while (list($field) = @each($array)) 
+    foreach($array as $field=>$value)
     {
       for ($x=1; $x<count($args); $x++)
       {
@@ -572,7 +572,7 @@ class PHPCrawlerUtils
                    "content\s*=\s*(?|\"([^\"]+)\"|'([^']+)'|([^\s><'\"]+))".
                    ".*># Uis", $html_source, $matches);
     
-    $tags = array();            
+    $tags  = [];            
     for ($x=0; $x<count($matches[0]); $x++)
     {
       $meta_name = strtolower(trim($matches[1][$x]));

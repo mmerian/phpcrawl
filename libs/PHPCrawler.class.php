@@ -149,7 +149,7 @@ class PHPCrawler
    */
   protected $working_directory = null;
   
-  protected $link_priority_array = array();
+  protected $link_priority_array  = [];
   
   /**
    * Number of child-process (NOT the PID!)
@@ -460,7 +460,7 @@ class PHPCrawler
       $this->processRobotsTxt();
     
     // Fork off child-processes
-    $pids = array();
+    $pids  = [];
     
     for($i=1; $i<=$process_count; $i++)
     {
@@ -663,8 +663,7 @@ class PHPCrawler
     
     // Add post-data to request
     $post_data = $this->UserSendDataCache->getPostDataForUrl($UrlDescriptor->url_rebuild);
-    while (list($post_key, $post_value) = @each($post_data))
-    {
+    foreach($post_data as $post_key=>$post_value) {
       $this->PageRequest->addPostData($post_key, $post_value);
     }
     

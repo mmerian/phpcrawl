@@ -73,7 +73,7 @@ class PHPCrawlerResponseHeader
    *
    * @var array Numeric array containing all cookies as {@link PHPCrawlerCookieDescriptor}-objects
    */
-  public $cookies = array();
+  public $cookies  = [];
   
   /**
    * The URL of the website the header was recevied from.

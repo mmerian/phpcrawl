@@ -7,7 +7,7 @@
  */
 abstract class PHPCrawlerURLCacheBase
 {
-  protected $url_priorities = array();
+  protected $url_priorities  = [];
   
   /**
    * Defines which property of an URL is used to ensure that each URL is only cached once.

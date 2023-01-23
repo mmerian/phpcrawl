@@ -7,7 +7,7 @@
  */
 class PHPCrawlerMemoryCookieCache extends PHPCrawlerCookieCacheBase
 {
-  protected $cookies = array();
+  protected $cookies  = [];
   
   /**
    * Adds a cookie to the cookie-cache.
@@ -51,11 +51,11 @@ class PHPCrawlerMemoryCookieCache extends PHPCrawlerCookieCacheBase
     
     $target_domain = $url_parts["domain"]; // e.g. acme.com
     
-    $return_cookies = array();
+    $return_cookies  = [];
     
     // Iterate over all cookies of this domain
     @reset($this->cookies[$target_domain]);
-    while (list($hash) = @each($this->cookies[$target_domain]))
+    foreach($this->cookies[$target_domain] as $hash=>$value)
     {
       $Cookie = $this->cookies[$target_domain][$hash];
       
@@ -87,7 +87,7 @@ class PHPCrawlerMemoryCookieCache extends PHPCrawlerCookieCacheBase
    */
   public function cleanup()
   {
-    $this->cookies = array();
+    $this->cookies  = [];
   }
 }
 ?>

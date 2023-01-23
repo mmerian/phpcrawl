@@ -13,14 +13,14 @@ class PHPCrawlerUserSendDataCache
    *
    * @var array
    */
-  protected $basic_authentications = array();
+  protected $basic_authentications  = [];
   
   /**
    * Array containing post-data to send.
    *
    * @var array
    */
-  protected $post_data = array();
+  protected $post_data  = [];
   
   /**
    * Adds post-data together with an URL-regex to the list of post-data to send with requests.
@@ -37,15 +37,15 @@ class PHPCrawlerUserSendDataCache
     if ($regex_okay == true)
     {
       @reset($post_data_array);
-      while (list($key, $value) = @each($post_data_array))
-      {  
-        // Add data to post_data-array
-        $tmp = array();
-        $tmp["url_regex"] = $url_regex;
-        $tmp["key"] = $key;
-        $tmp["value"] = $value;
-      
-        $this->post_data[] = $tmp;
+
+      foreach($post_data_array as $key=>$value) {
+       // Add data to post_data-array
+       $tmp  = [];
+       $tmp["url_regex"] = $url_regex;
+       $tmp["key"] = $key;
+       $tmp["value"] = $value;
+     
+       $this->post_data[] = $tmp; 
       }
       
       return true;
@@ -62,7 +62,7 @@ class PHPCrawlerUserSendDataCache
    */
   public function getPostDataForUrl($url)
   {
-    $post_data_array = array();
+    $post_data_array  = [];
     
     $cnt = count($this->post_data);
     for ($x=0; $x<$cnt; $x++)
@@ -94,7 +94,7 @@ class PHPCrawlerUserSendDataCache
     if ($regex_okay == true)
     {
       // Add authentication to basic_authentications-array
-      $tmp = array();
+      $tmp  = [];
       $tmp["url_regex"] = $url_regex;
       $tmp["username"] = $username;
       $tmp["password"] = $password;
@@ -118,7 +118,7 @@ class PHPCrawlerUserSendDataCache
     {
       if (preg_match($this->basic_authentications[$x]["url_regex"], $url))
       {
-        $tmp = array();
+        $tmp  = [];
         $tmp["username"] = $this->basic_authentications[$x]["username"];
         $tmp["password"] = $this->basic_authentications[$x]["password"];
         
@@ -129,4 +129,3 @@ class PHPCrawlerUserSendDataCache
     return null;
   }
 }
-?>
