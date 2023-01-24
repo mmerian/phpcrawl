@@ -288,7 +288,7 @@ class PhpcrawlSetup extends PHPCrawler
 
         if ($key == "content_size") {
           $str = PHPCrawlerUtils::getHeaderValue($DocInfo->header, "content-length");
-          if (trim($str) == "") $str = "??";
+          if (is_null($str) || trim($str) == "") $str = "??";
           echo "<tr><td>Content-Size:</td><td >" . $str . " bytes</td></tr>";
         }
 
