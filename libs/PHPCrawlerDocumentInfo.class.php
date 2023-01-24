@@ -112,13 +112,6 @@ class PHPCrawlerDocumentInfo
    */
   public $received_completely = false;
   
-  /**
-   * Alias for received_completely, was spelled wrong in prevoius versions of phpcrawl.
-   *
-   * @deprecated
-   * @section 11 Deprecated
-   */
-  public $received_completly = false;
   
   /**
    * Will be true if the content was received into local memory.
@@ -167,7 +160,7 @@ class PHPCrawlerDocumentInfo
   /**
    * The content of the requested document (html-sourcecode or content of file).
    *
-   * Will be empty if "received" is FALSE and the source won't be complete if "received_completly" is FALSE!
+   * Will be empty if "received" is FALSE and the source won't be complete if "received_completely" is FALSE!
    *
    * @var string
    * @section 2 Content-related information

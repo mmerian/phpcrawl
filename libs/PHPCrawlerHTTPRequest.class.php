@@ -438,7 +438,6 @@ class PHPCrawlerHTTPRequest
     // Complete ResponseObject
     $PageInfo->content = $response_content;
     $PageInfo->source = &$PageInfo->content;
-    $PageInfo->received_completly = $PageInfo->received_completely;
 
     if ($stream_to_file == true) {
       $PageInfo->received_to_file = true;
@@ -951,7 +950,7 @@ class PHPCrawlerHTTPRequest
     if (PHPCrawlerEncodingUtils::isUTF8String($query) == true) {
       $query = rawurlencode($query);
     } else {
-      $query = rawurlencode(utf8_encode($query));
+      $query = rawurlencode(mb_convert_encoding($query, 'UTF-8'));
     }
 
     // Replace url-specific signs back
