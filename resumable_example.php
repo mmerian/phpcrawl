@@ -35,16 +35,16 @@ $crawler->enableResumption();
 
 // At the firts start of the script retreive the crawler-ID and store it
 // (in a temporary file in this example)
-if (!file_exists("/tmp/mycrawlerid_for_php.net.tmp"))
+if (!file_exists(__DIR__ . "/tmp/mycrawlerid_for_php.net.tmp"))
 {
   $crawler_ID = $crawler->getCrawlerId();
-  file_put_contents("/tmp/mycrawlerid_for_php.net.tmp", $crawler_ID);
+  file_put_contents(__DIR__ . "/tmp/mycrawlerid_for_php.net.tmp", $crawler_ID);
 }
 // If the script was restarted again (after it was aborted), read the crawler-ID
 // and pass it to the resume() method.
 else
 {
-  $crawler_ID = file_get_contents("/tmp/mycrawlerid_for_php.net.tmp");
+  $crawler_ID = file_get_contents(__DIR__ . "/tmp/mycrawlerid_for_php.net.tmp");
   $crawler->resume($crawler_ID);
 }
 
@@ -52,7 +52,7 @@ else
 $crawler->goMultiProcessed(5);
 
 // Delete the stored crawler-ID after the process is finished completely and successfully.
-unlink("/tmp/mycrawlerid_for_php.net.tmp");
+unlink(__DIR__ . "/tmp/mycrawlerid_for_php.net.tmp");
 
 $report = $crawler->getProcessReport();
 
@@ -63,5 +63,4 @@ echo "Summary:".$lb;
 echo "Links followed: ".$report->links_followed.$lb;
 echo "Documents received: ".$report->files_received.$lb;
 echo "Bytes received: ".$report->bytes_received." bytes".$lb;
-echo "Process runtime: ".$report->process_runtime." sec".$lb; 
-?>
+echo "Process runtime: ".$report->process_runtime." sec".$lb;

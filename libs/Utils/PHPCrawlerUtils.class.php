@@ -35,7 +35,7 @@ class PHPCrawlerUtils
 
     if (!isset($parts)) return null;
 
-    $protocol = $parts["scheme"] . "://";
+    $protocol = (isset($parts["scheme"]) ? $parts["scheme"] . "://" : "");
     $host = (isset($parts["host"]) ? $parts["host"] : "");
     $path = (isset($parts["path"]) ? $parts["path"] : "");
     $query = (isset($parts["query"]) ? "?" . $parts["query"] : "");
